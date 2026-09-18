@@ -330,9 +330,11 @@ export default function App() {
     if (!problem) return { points: 0, status: 'wrong' };
 
     const trimmedAnswer = rawAns.trim();
+    const trimmedWork = work.trim();
     const ansClean = normalizeCompactAnswer(rawAns);
-    const workClean = (work || '').toLowerCase();
-    if (!trimmedAnswer && !workClean.trim()) return { points: 0, status: 'wrong' };
+    const workClean = normalizeCompactAnswer(work);
+
+    if (!trimmedAnswer && !trimmedWork) return { points: 0, status: 'wrong' };
 
     // 1. Exact normalized answer match -> full credit (2 pts)
     const isFullCredit = trimmedAnswer
@@ -345,7 +347,7 @@ export default function App() {
     if (trimmedAnswer && problem.partial && problem.partial(ansClean)) {
       return { points: 1, status: 'partial' };
     }
-    if (workClean.length > 10 && problem.partial && problem.partial(workClean)) {
+    if (trimmedWork.length > 10 && problem.partial && problem.partial(workClean)) {
       return { points: 1, status: 'partial' };
     }
 
