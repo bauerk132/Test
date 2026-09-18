@@ -32,8 +32,18 @@ fi
 echo "Remote set to origin -> https://github.com/${USERNAME}/${REPONAME}.git"
 echo "Pushing main branch..."
 if [ -n "$GITHUB_TOKEN" ]; then
-  AUTH_HEADER=$(printf "x-access-token:%s" "$GITHUB_TOKEN" | base64 | tr -d '\n')
-  git -c http.extraHeader="Authorization: Basic ${AUTH_HEADER}" push -u origin main
+  ASKPASS_SCRIPT="$(mktemp)"
+  trap 'rm -f "$ASKPASS_SCRIPT"' EXIT
+  cat > "$ASKPASS_SCRIPT" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+  *Username*) echo "x-access-token" ;;
+  *Password*) echo "$GITHUB_TOKEN" ;;
+  *) echo "" ;;
+esac
+EOF
+  chmod 700 "$ASKPASS_SCRIPT"
+  GITHUB_TOKEN="$GITHUB_TOKEN" GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$ASKPASS_SCRIPT" git push -u origin main
 else
   git push -u origin main
 fi
