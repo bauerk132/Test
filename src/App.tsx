@@ -63,13 +63,10 @@ const answerContainsKeywordPhrase = (userAnswer: string, candidate: string) => {
   const normalizedPattern = new RegExp(
     `(^|[^a-z0-9])${escapeRegExp(normalizedCandidate)}($|[^a-z0-9])`
   );
-  const compactPattern = new RegExp(
-    `(^|[^a-z0-9])${escapeRegExp(compactCandidate)}($|[^a-z0-9])`
-  );
 
   return (
     normalizedPattern.test(normalizedUser) ||
-    (compactCandidate.length > 2 && compactPattern.test(compactUser))
+    (compactCandidate.length > 2 && compactUser.includes(compactCandidate))
   );
 };
 
