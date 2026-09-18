@@ -32,18 +32,9 @@ fi
 echo "Remote set to origin -> https://github.com/${USERNAME}/${REPONAME}.git"
 echo "Pushing main branch..."
 if [ -n "$GITHUB_TOKEN" ]; then
-  ASKPASS_SCRIPT="$(mktemp)"
-  trap 'rm -f "$ASKPASS_SCRIPT"' EXIT
-  cat > "$ASKPASS_SCRIPT" <<'EOF'
-#!/bin/sh
-case "$1" in
-  *Username*) echo "x-access-token" ;;
-  *Password*) echo "$GITHUB_TOKEN" ;;
-  *) echo "" ;;
-esac
-EOF
-  chmod 700 "$ASKPASS_SCRIPT"
-  GITHUB_TOKEN="$GITHUB_TOKEN" GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$ASKPASS_SCRIPT" git push -u origin main
+  GITHUB_TOKEN="$GITHUB_TOKEN" GIT_TERMINAL_PROMPT=0 \
+    git -c credential.helper='!f() { echo "username=x-access-token"; echo "password=$GITHUB_TOKEN"; }; f' \
+    push -u origin main
 else
   git push -u origin main
 fi

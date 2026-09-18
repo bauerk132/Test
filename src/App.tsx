@@ -30,6 +30,8 @@ const normalizeCompactAnswer = (value: string) =>
     .replace(/[$,]/g, '')
     .replace(/\s/g, '');
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const answersMatchExactly = (userAnswer: string, candidate: string) => {
   const normalizedUser = normalizeAnswer(userAnswer);
   const normalizedCandidate = normalizeAnswer(candidate);
@@ -58,10 +60,16 @@ const answerContainsKeywordPhrase = (userAnswer: string, candidate: string) => {
   const normalizedCandidate = normalizeAnswer(candidate);
   const compactUser = normalizeCompactAnswer(userAnswer);
   const compactCandidate = normalizeCompactAnswer(candidate);
+  const normalizedPattern = new RegExp(
+    `(^|[^a-z0-9])${escapeRegExp(normalizedCandidate)}($|[^a-z0-9])`
+  );
+  const compactPattern = new RegExp(
+    `(^|[^a-z0-9])${escapeRegExp(compactCandidate)}($|[^a-z0-9])`
+  );
 
   return (
-    normalizedUser.includes(normalizedCandidate) ||
-    (compactCandidate.length > 2 && compactUser.includes(compactCandidate))
+    normalizedPattern.test(normalizedUser) ||
+    (compactCandidate.length > 2 && compactPattern.test(compactUser))
   );
 };
 
