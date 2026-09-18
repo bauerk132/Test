@@ -347,7 +347,7 @@ export default function App() {
     if (trimmedAnswer && problem.partial && problem.partial(ansClean)) {
       return { points: 1, status: 'partial' };
     }
-    if (trimmedWork.length > 10 && problem.partial && problem.partial(workClean)) {
+    if (workClean.length > 10 && problem.partial && problem.partial(workClean)) {
       return { points: 1, status: 'partial' };
     }
 
