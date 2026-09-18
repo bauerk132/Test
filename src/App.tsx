@@ -42,7 +42,7 @@ const answersMatchExactly = (userAnswer: string, candidate: string) => {
 
 const keywordSupportsPhraseMatch = (candidate: string) => {
   const normalizedCandidate = normalizeAnswer(candidate);
-  return /[\s=(),]/.test(normalizedCandidate);
+  return /[\s=(),]/.test(normalizedCandidate) || normalizedCandidate.includes('->');
 };
 
 const answerContainsKeywordPhrase = (userAnswer: string, candidate: string) => {
