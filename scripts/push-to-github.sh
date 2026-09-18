@@ -35,7 +35,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
   ASKPASS_SCRIPT="$(mktemp)"
   trap 'rm -f "$ASKPASS_SCRIPT"' EXIT
   cat > "$ASKPASS_SCRIPT" <<'EOF'
-#!/usr/bin/env bash
+#!/bin/sh
 case "$1" in
   *Username*) echo "x-access-token" ;;
   *Password*) echo "$GITHUB_TOKEN" ;;

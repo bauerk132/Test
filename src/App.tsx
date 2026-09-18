@@ -42,7 +42,12 @@ const answersMatchExactly = (userAnswer: string, candidate: string) => {
 
 const keywordSupportsPhraseMatch = (candidate: string) => {
   const normalizedCandidate = normalizeAnswer(candidate);
-  return /[\s=(),]/.test(normalizedCandidate) || normalizedCandidate.includes('->');
+  const compactCandidate = normalizeCompactAnswer(candidate);
+  if (!compactCandidate) return false;
+  if (/\s/.test(normalizedCandidate)) return true;
+  if (/^-?\d+(?:\.\d+)?(?:\/-?\d+(?:\.\d+)?)?$/.test(compactCandidate)) return false;
+  if (/^[a-z]+$/.test(compactCandidate)) return false;
+  return compactCandidate.length > 1;
 };
 
 const answerContainsKeywordPhrase = (userAnswer: string, candidate: string) => {
