@@ -40,6 +40,26 @@ const answersMatchExactly = (userAnswer: string, candidate: string) => {
   );
 };
 
+const keywordSupportsPhraseMatch = (candidate: string) => {
+  const normalizedCandidate = normalizeAnswer(candidate);
+  return /[\s=(),]/.test(normalizedCandidate);
+};
+
+const answerContainsKeywordPhrase = (userAnswer: string, candidate: string) => {
+  if (answersMatchExactly(userAnswer, candidate)) return true;
+  if (!keywordSupportsPhraseMatch(candidate)) return false;
+
+  const normalizedUser = normalizeAnswer(userAnswer);
+  const normalizedCandidate = normalizeAnswer(candidate);
+  const compactUser = normalizeCompactAnswer(userAnswer);
+  const compactCandidate = normalizeCompactAnswer(candidate);
+
+  return (
+    normalizedUser.includes(normalizedCandidate) ||
+    (compactCandidate.length > 2 && compactUser.includes(compactCandidate))
+  );
+};
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -312,13 +332,12 @@ export default function App() {
     const trimmedAnswer = rawAns.trim();
     const ansClean = normalizeCompactAnswer(rawAns);
     const workClean = (work || '').toLowerCase();
-    const allFullCreditAnswers = [problem.answer, ...problem.kw];
-
     if (!trimmedAnswer && !workClean.trim()) return { points: 0, status: 'wrong' };
 
     // 1. Exact normalized answer match -> full credit (2 pts)
     const isFullCredit = trimmedAnswer
-      ? allFullCreditAnswers.some((candidate) => answersMatchExactly(trimmedAnswer, candidate))
+      ? answersMatchExactly(trimmedAnswer, problem.answer) ||
+        problem.kw.some((candidate) => answerContainsKeywordPhrase(trimmedAnswer, candidate))
       : false;
     if (isFullCredit) return { points: 2, status: 'correct' };
 
