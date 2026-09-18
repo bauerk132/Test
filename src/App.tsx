@@ -15,6 +15,31 @@ import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, Refresh
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 
+const normalizeAnswer = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFKC')
+    .replace(/[−–—]/g, '-')
+    .replace(/[∞]/g, 'inf')
+    .replace(/[→➔]/g, '->')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeCompactAnswer = (value: string) =>
+  normalizeAnswer(value)
+    .replace(/[$,]/g, '')
+    .replace(/\s/g, '');
+
+const answersMatchExactly = (userAnswer: string, candidate: string) => {
+  const normalizedUser = normalizeAnswer(userAnswer);
+  const normalizedCandidate = normalizeAnswer(candidate);
+  if (!normalizedUser || !normalizedCandidate) return false;
+  return (
+    normalizedUser === normalizedCandidate ||
+    normalizeCompactAnswer(userAnswer) === normalizeCompactAnswer(candidate)
+  );
+};
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -110,21 +135,12 @@ export default function App() {
     if (!targetExample) return false;
 
     const step = targetExample.steps[stepIndex];
-    const cleanUser = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
-    const cleanNoSpaces = cleanUser.replace(/\s/g, '');
-
     const candidates = [
-      step.answer.toLowerCase(),
-      ...(step.acceptableAnswers || []).map((a) => a.toLowerCase()),
+      step.answer,
+      ...(step.acceptableAnswers || []),
     ];
 
-    let isCorrect = candidates.some((cand) => {
-      const candClean = cand.replace(/\s+/g, ' ');
-      const candNoSpaces = cand.replace(/\s/g, '');
-      if (cleanUser === candClean || cleanNoSpaces === candNoSpaces) return true;
-      if (cleanUser.includes(candClean) || cleanNoSpaces.includes(candNoSpaces)) return true;
-      return false;
-    });
+    let isCorrect = candidates.some((cand) => answersMatchExactly(userAnswer, cand));
 
     // Flexible numerical/keyword parsing
     if (!isCorrect) {
@@ -291,19 +307,23 @@ export default function App() {
     work: string
   ): { points: 0 | 1 | 2; status: 'correct' | 'partial' | 'wrong' } => {
     const problem = findProblem(qId);
-    if (!problem || !rawAns.trim()) return { points: 0, status: 'wrong' };
+    if (!problem) return { points: 0, status: 'wrong' };
 
-    const ansClean = rawAns.toLowerCase().replace(/\s/g, '');
+    const trimmedAnswer = rawAns.trim();
+    const ansClean = normalizeCompactAnswer(rawAns);
     const workClean = (work || '').toLowerCase();
+    const allFullCreditAnswers = [problem.answer, ...problem.kw];
 
-    // 1. Direct keyword match -> full credit (2 pts)
-    const isFullCredit = problem.kw.some((kw) =>
-      ansClean.includes(kw.toLowerCase().replace(/\s/g, ''))
-    );
+    if (!trimmedAnswer && !workClean.trim()) return { points: 0, status: 'wrong' };
+
+    // 1. Exact normalized answer match -> full credit (2 pts)
+    const isFullCredit = trimmedAnswer
+      ? allFullCreditAnswers.some((candidate) => answersMatchExactly(trimmedAnswer, candidate))
+      : false;
     if (isFullCredit) return { points: 2, status: 'correct' };
 
     // 2. Partial function or work match -> partial credit (1 pt)
-    if (problem.partial && problem.partial(ansClean)) {
+    if (trimmedAnswer && problem.partial && problem.partial(ansClean)) {
       return { points: 1, status: 'partial' };
     }
     if (workClean.length > 10 && problem.partial && problem.partial(workClean)) {
