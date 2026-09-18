@@ -1,0 +1,6 @@
+{
+  "name": "Precalculus MAT201 — Master Curriculum Suite (Modules 5–9)",
+  "description": "Unified Precalculus learning curriculum combining authentic exam problems (5 questions each for Modules 5 & 6, 10 questions each for Modules 7, 8 & 9) and 15 scaffolded guided walkthroughs with instant grading and partial credit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
