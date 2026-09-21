@@ -15,6 +15,13 @@ import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, Refresh
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 
+const problemLookupMap = new Map<string, PracticeProblem>();
+Object.values(UNIFIED_EXAM_QUESTIONS).forEach((problems) => {
+  if (problems && Array.isArray(problems)) {
+    problems.forEach((p) => problemLookupMap.set(p.id, p));
+  }
+});
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -197,14 +204,7 @@ export default function App() {
 
   // Generate a single problem variant with randomized numbers
   const handleGenerateVariant = (problemId: string) => {
-    let baseProblem: PracticeProblem | null = null;
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === problemId);
-      if (p) {
-        baseProblem = p;
-        break;
-      }
-    }
+    const baseProblem = problemLookupMap.get(problemId) || null;
     if (!baseProblem) return;
 
     const currentCount = variantCounters[problemId] || 1;
@@ -277,11 +277,7 @@ export default function App() {
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
     if (problemVariants[qId]) return problemVariants[qId];
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === qId);
-      if (p) return p;
-    }
-    return null;
+    return problemLookupMap.get(qId) || null;
   };
 
   // Grade Practice / Test Problem
