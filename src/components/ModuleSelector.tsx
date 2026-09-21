@@ -5,9 +5,7 @@ import { Check, Sparkles, Compass, Edit3, ArrowRight, BookOpen, Layers, CheckCir
 interface ModuleSelectorProps {
   selectedMods: ModuleId[];
   onToggleMod: (mod: ModuleId) => void;
-  onSelectAll: () => void;
-  onSelectTest2Only: () => void;
-  onSelectAlgebraOnly: () => void;
+  onSelectPreset: (mods: ModuleId[]) => void;
   onStart: () => void;
 }
 
@@ -150,9 +148,7 @@ const MODULES_META: ModMeta[] = [
 export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
   selectedMods,
   onToggleMod,
-  onSelectAll,
-  onSelectTest2Only,
-  onSelectAlgebraOnly,
+  onSelectPreset,
   onStart,
 }) => {
   const totalSelectedQuestions = MODULES_META.filter((m) => selectedMods.includes(m.id)).reduce(
@@ -218,7 +214,7 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={onSelectAll}
+            onClick={() => onSelectPreset([5, 6, 7, 8, 9])}
             className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
               selectedMods.length === 5
                 ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white shadow-md'
@@ -229,7 +225,7 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
           </button>
           <button
             type="button"
-            onClick={onSelectTest2Only}
+            onClick={() => onSelectPreset([7, 8, 9])}
             className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
               selectedMods.length === 3 &&
               selectedMods.includes(7) &&
@@ -243,7 +239,7 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
           </button>
           <button
             type="button"
-            onClick={onSelectAlgebraOnly}
+            onClick={() => onSelectPreset([5, 6])}
             className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
               selectedMods.length === 2 &&
               selectedMods.includes(5) &&

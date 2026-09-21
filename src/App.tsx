@@ -65,16 +65,8 @@ export default function App() {
     );
   };
 
-  const handleSelectAll = () => {
-    setSelectedMods([5, 6, 7, 8, 9]);
-  };
-
-  const handleSelectTest2Only = () => {
-    setSelectedMods([7, 8, 9]);
-  };
-
-  const handleSelectAlgebraOnly = () => {
-    setSelectedMods([5, 6]);
+  const handleSelectPreset = (mods: ModuleId[]) => {
+    setSelectedMods(mods);
   };
 
   const handleStart = () => {
@@ -463,9 +455,7 @@ export default function App() {
           <ModuleSelector
             selectedMods={selectedMods}
             onToggleMod={toggleMod}
-            onSelectAll={handleSelectAll}
-            onSelectTest2Only={handleSelectTest2Only}
-            onSelectAlgebraOnly={handleSelectAlgebraOnly}
+            onSelectPreset={handleSelectPreset}
             onStart={handleStart}
           />
         )}
