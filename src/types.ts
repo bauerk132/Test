@@ -39,6 +39,7 @@ export interface PracticeProblem {
   diff: 'easy' | 'medium' | 'hard';
   answer: string;
   kw: string[];
+  kwClean?: string[];
   partial?: (ans: string) => boolean;
   steps: string[];
   graphType?: 'parabola_shift' | 'exp_growth' | 'exp_decay' | 'log_curve' | 'cubic_symm' | 'rational_curve';
