@@ -1,0 +1,3 @@
+## 2024-05-18 - Root-level SetInterval Timers and React Renders
+**Learning:** A live timer (`setInterval`) in a top-level component like `App.tsx` triggers a full component tree re-render on every tick (every second). This frequently exposes performance bottlenecks in unmemoized derived state and unmemoized pure children components (e.g., generating SVG paths or mapping large arrays of complex data).
+**Action:** Always verify if a root-level timer exists. If it does, ensure that large array operations (`filter`, `map`, `forEach`) to derive progress/stats are wrapped in `useMemo`, and mathematically heavy visual components (like SVG graph plotters) are wrapped in `React.memo()` or have internal point mappings memoized with `useMemo`.

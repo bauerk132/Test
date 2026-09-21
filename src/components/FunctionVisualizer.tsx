@@ -6,7 +6,7 @@ interface FunctionVisualizerProps {
   color?: string;
 }
 
-export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = ({
+export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = React.memo(({
   type = 'parabola_shift',
   title,
   color = '#8b5cf6',
@@ -222,4 +222,4 @@ export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = ({
       </div>
     </div>
   );
-};
+});

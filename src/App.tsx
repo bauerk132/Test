@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem } from './types';
 import { MICRO_SKILLS } from './data/microSkills';
 import { GUIDED } from './data/guidedData';
@@ -314,9 +314,11 @@ export default function App() {
   };
 
   // Resolve all active exam problems across selected modules (incorporating active variants)
-  const activeProblems: PracticeProblem[] = selectedMods.flatMap(
-    (m) => (UNIFIED_EXAM_QUESTIONS[m] || []).map((p) => problemVariants[p.id] || p)
-  );
+  const activeProblems: PracticeProblem[] = useMemo(() => {
+    return selectedMods.flatMap(
+      (m) => (UNIFIED_EXAM_QUESTIONS[m] || []).map((p) => problemVariants[p.id] || p)
+    );
+  }, [selectedMods, problemVariants]);
 
   const handleSubmit = () => {
     setIsTimerRunning(false);
@@ -360,47 +362,61 @@ export default function App() {
   };
 
   // Progress Calculations
-  const problemsAnswered = activeProblems.filter(
-    (p) => userAnswers[p.id] && userAnswers[p.id].trim() !== ''
-  ).length;
+  const { problemsAnswered, guidedStepsTotal, guidedStepsDone, totalActionItems, completedActionItems, overallPct } = useMemo(() => {
+    const answered = activeProblems.filter(
+      (p) => userAnswers[p.id] && userAnswers[p.id].trim() !== ''
+    ).length;
 
-  let guidedStepsTotal = 0;
-  let guidedStepsDone = 0;
-  selectedMods.forEach((m) => {
-    (GUIDED[m] || []).forEach((g) => {
-      guidedStepsTotal += g.steps.length;
-      const st = guidedState[g.id];
-      if (st) {
-        guidedStepsDone += st.stepResults.filter((r) => r && r.revealed).length;
-      }
+    let gTotal = 0;
+    let gDone = 0;
+    selectedMods.forEach((m) => {
+      (GUIDED[m] || []).forEach((g) => {
+        gTotal += g.steps.length;
+        const st = guidedState[g.id];
+        if (st) {
+          gDone += st.stepResults.filter((r) => r && r.revealed).length;
+        }
+      });
     });
-  });
 
-  const totalActionItems = guidedStepsTotal + activeProblems.length;
-  const completedActionItems = guidedStepsDone + problemsAnswered;
-  const overallPct =
-    totalActionItems > 0 ? Math.round((completedActionItems / totalActionItems) * 100) : 0;
+    const tActionItems = gTotal + activeProblems.length;
+    const cActionItems = gDone + answered;
+    const pct = tActionItems > 0 ? Math.round((cActionItems / tActionItems) * 100) : 0;
+
+    return {
+      problemsAnswered: answered,
+      guidedStepsTotal: gTotal,
+      guidedStepsDone: gDone,
+      totalActionItems: tActionItems,
+      completedActionItems: cActionItems,
+      overallPct: pct,
+    };
+  }, [activeProblems, userAnswers, selectedMods, guidedState]);
 
   // Results Scores
-  let earnedPts = 0;
-  const maxPts = activeProblems.length * 2;
-  const modScores: Record<number, ModuleStats> = {};
+  const { earnedPts, maxPts, modScores } = useMemo(() => {
+    let earned = 0;
+    const max = activeProblems.length * 2;
+    const scores: Record<number, ModuleStats> = {};
 
-  selectedMods.forEach((m) => {
-    const modProbs = activeProblems.filter((p) => p.mod === m);
-    let modEarned = 0;
-    modProbs.forEach((p) => {
-      const res = practiceResults[p.id];
-      if (res) modEarned += res.points;
+    selectedMods.forEach((m) => {
+      const modProbs = activeProblems.filter((p) => p.mod === m);
+      let modEarned = 0;
+      modProbs.forEach((p) => {
+        const res = practiceResults[p.id];
+        if (res) modEarned += res.points;
+      });
+      const modMax = modProbs.length * 2;
+      scores[m] = {
+        earned: modEarned,
+        max: modMax,
+        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
+      };
+      earned += modEarned;
     });
-    const modMax = modProbs.length * 2;
-    modScores[m] = {
-      earned: modEarned,
-      max: modMax,
-      pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-    };
-    earnedPts += modEarned;
-  });
+
+    return { earnedPts: earned, maxPts: max, modScores: scores };
+  }, [activeProblems, selectedMods, practiceResults]);
 
   const scrollToAnchor = (mod: ModuleId) => {
     setActiveTab(mod);

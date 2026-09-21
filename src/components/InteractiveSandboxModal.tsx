@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, RotateCcw, Sliders } from 'lucide-react';
 
 interface InteractiveSandboxModalProps {
@@ -36,74 +36,78 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
   const toSvgY = (yVal: number) => cy - yVal * scale;
 
   // Calculate transformed curve
-  const points: string[] = [];
-  const parentPoints: string[] = [];
-  let asymptotePath = '';
-  let asymptoteLabel = '';
+  const { points, parentPoints, asymptotePath, asymptoteLabel } = useMemo(() => {
+    const pts: string[] = [];
+    const pPts: string[] = [];
+    let aPath = '';
+    let aLabel = '';
 
-  if (parentType === 'quadratic') {
-    // Parent x^2
-    for (let x = -6; x <= 6; x += 0.2) {
-      parentPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(x * x).toFixed(1)}`);
-    }
-    // Transformed: a * (b*(x - h))^2 + k
-    for (let x = -8; x <= 8; x += 0.15) {
-      const u = b * (x - h);
-      const y = a * (u * u) + k;
-      if (y > -15 && y < 15) {
-        points.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+    if (parentType === 'quadratic') {
+      // Parent x^2
+      for (let x = -6; x <= 6; x += 0.2) {
+        pPts.push(`${toSvgX(x).toFixed(1)},${toSvgY(x * x).toFixed(1)}`);
       }
-    }
-  } else if (parentType === 'absolute') {
-    for (let x = -6; x <= 6; x += 0.2) {
-      parentPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.abs(x)).toFixed(1)}`);
-    }
-    for (let x = -8; x <= 8; x += 0.15) {
-      const u = b * (x - h);
-      const y = a * Math.abs(u) + k;
-      if (y > -15 && y < 15) {
-        points.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-      }
-    }
-  } else if (parentType === 'exponential') {
-    // Parent 2^x
-    for (let x = -7; x <= 4; x += 0.2) {
-      parentPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.pow(2, x)).toFixed(1)}`);
-    }
-    // Asymptote is y = k
-    const haY = toSvgY(k);
-    asymptotePath = `M 0,${haY} L ${width},${haY}`;
-    asymptoteLabel = `HA: y = ${k}`;
-
-    for (let x = -10; x <= 10; x += 0.15) {
-      const u = b * (x - h);
-      if (u <= 8) {
-        const y = a * Math.pow(2, u) + k;
+      // Transformed: a * (b*(x - h))^2 + k
+      for (let x = -8; x <= 8; x += 0.15) {
+        const u = b * (x - h);
+        const y = a * (u * u) + k;
         if (y > -15 && y < 15) {
-          points.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+          pts.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
+      }
+    } else if (parentType === 'absolute') {
+      for (let x = -6; x <= 6; x += 0.2) {
+        pPts.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.abs(x)).toFixed(1)}`);
+      }
+      for (let x = -8; x <= 8; x += 0.15) {
+        const u = b * (x - h);
+        const y = a * Math.abs(u) + k;
+        if (y > -15 && y < 15) {
+          pts.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
+      }
+    } else if (parentType === 'exponential') {
+      // Parent 2^x
+      for (let x = -7; x <= 4; x += 0.2) {
+        pPts.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.pow(2, x)).toFixed(1)}`);
+      }
+      // Asymptote is y = k
+      const haY = toSvgY(k);
+      aPath = `M 0,${haY} L ${width},${haY}`;
+      aLabel = `HA: y = ${k}`;
+
+      for (let x = -10; x <= 10; x += 0.15) {
+        const u = b * (x - h);
+        if (u <= 8) {
+          const y = a * Math.pow(2, u) + k;
+          if (y > -15 && y < 15) {
+            pts.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+          }
+        }
+      }
+    } else if (parentType === 'logarithmic') {
+      // Parent log2(x)
+      for (let x = 0.1; x <= 8; x += 0.15) {
+        pPts.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.log2(x)).toFixed(1)}`);
+      }
+      // VA is x = h
+      const vaX = toSvgX(h);
+      aPath = `M ${vaX},0 L ${vaX},${height}`;
+      aLabel = `VA: x = ${h}`;
+
+      for (let x = -10; x <= 10; x += 0.1) {
+        const u = b * (x - h);
+        if (u > 0.05) {
+          const y = a * Math.log2(u) + k;
+          if (y > -15 && y < 15) {
+            pts.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+          }
         }
       }
     }
-  } else if (parentType === 'logarithmic') {
-    // Parent log2(x)
-    for (let x = 0.1; x <= 8; x += 0.15) {
-      parentPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(Math.log2(x)).toFixed(1)}`);
-    }
-    // VA is x = h
-    const vaX = toSvgX(h);
-    asymptotePath = `M ${vaX},0 L ${vaX},${height}`;
-    asymptoteLabel = `VA: x = ${h}`;
 
-    for (let x = -10; x <= 10; x += 0.1) {
-      const u = b * (x - h);
-      if (u > 0.05) {
-        const y = a * Math.log2(u) + k;
-        if (y > -15 && y < 15) {
-          points.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-        }
-      }
-    }
-  }
+    return { points: pts, parentPoints: pPts, asymptotePath: aPath, asymptoteLabel: aLabel };
+  }, [parentType, a, b, h, k, width, height, toSvgX, toSvgY]);
 
   const formulaString = () => {
     const aStr = a === 1 ? '' : a === -1 ? '-' : `${a}·`;
