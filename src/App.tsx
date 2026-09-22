@@ -14,6 +14,7 @@ import { FormulaModal } from './components/FormulaModal';
 import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
@@ -721,6 +722,9 @@ export default function App() {
         isOpen={isFormulaOpen}
         onClose={() => setIsFormulaOpen(false)}
       />
+      
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
