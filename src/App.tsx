@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem } from './types';
 import { MICRO_SKILLS } from './data/microSkills';
 import { GUIDED } from './data/guidedData';
@@ -721,6 +722,9 @@ export default function App() {
         isOpen={isFormulaOpen}
         onClose={() => setIsFormulaOpen(false)}
       />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
