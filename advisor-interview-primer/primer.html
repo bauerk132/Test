@@ -1,0 +1,511 @@
+<title>Advisor Interview Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --paper: #F5F6F3;
+    --surface: #FFFFFF;
+    --ink: #15241F;
+    --muted: #5B6863;
+    --rule: #D8DDD8;
+    --green: #1E5B48;
+    --green-soft: #E4EEE9;
+    --brass: #9C7A33;
+    --brass-soft: #F4ECDA;
+    --warn: #A2412E;
+    --warn-soft: #F7E6E1;
+    --grid: #E6EAE6;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #0E1613; --surface: #15201C; --ink: #E4EBE7; --muted: #9AA9A2;
+      --rule: #2A3833; --green: #6CC0A1; --green-soft: #1A2E27;
+      --brass: #D6B46C; --brass-soft: #2C271B; --warn: #E48C77; --warn-soft: #34201B;
+      --grid: #22302B;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #0E1613; --surface: #15201C; --ink: #E4EBE7; --muted: #9AA9A2;
+    --rule: #2A3833; --green: #6CC0A1; --green-soft: #1A2E27;
+    --brass: #D6B46C; --brass-soft: #2C271B; --warn: #E48C77; --warn-soft: #34201B;
+    --grid: #22302B;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 400 16px/1.6 var(--sans);
+    padding: 0 16px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding-block: 32px 64px; display: grid; gap: 56px; }
+  h1, h2, h3 { font-family: var(--serif); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); line-height: 1.05; font-weight: 700; }
+  h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); line-height: 1.2; font-weight: 600; }
+  h3 { font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
+  p { margin: 0; max-width: 68ch; }
+  ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  strong { font-weight: 600; }
+  .label { font: 500 0.72rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Masthead */
+  .mast { display: grid; gap: 20px; padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+  .mast-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+  .mast-top .label b { color: var(--green); font-weight: 500; }
+  .lede { font-size: 1.12rem; color: var(--muted); max-width: 60ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+  .meta div { display: grid; gap: 4px; }
+  .meta span:last-child { font-weight: 600; }
+
+  /* Section frame: clock marker on the left, content on the right */
+  section { display: grid; grid-template-columns: 88px 1fr; gap: 8px 24px; }
+  .clock { font: 500 0.85rem/1.9 var(--mono); color: var(--brass); font-variant-numeric: tabular-nums; }
+  .body { display: grid; gap: 18px; min-width: 0; }
+  .body > .label { margin-bottom: -10px; }
+  @media (max-width: 640px) {
+    section { grid-template-columns: 1fr; }
+    .clock { line-height: 1; }
+  }
+
+  /* 60-second version */
+  .sixty { background: var(--green); color: var(--paper); border-radius: 6px; padding: 24px; display: grid; gap: 14px; }
+  .sixty h2 { color: var(--paper); }
+  .sixty ol { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+  .sixty li::marker { font-family: var(--mono); font-size: 0.85em; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sixty { color: #0E1613; } :root:not([data-theme="light"]) .sixty h2 { color: #0E1613; } }
+  :root[data-theme="dark"] .sixty, :root[data-theme="dark"] .sixty h2 { color: #0E1613; }
+
+  /* Comparison pair */
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; }
+  .panel .tag { justify-self: start; font: 500 0.72rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 8px; border-radius: 3px; background: var(--green-soft); color: var(--green); }
+  .panel .tag.brass { background: var(--brass-soft); color: var(--brass); }
+
+  /* Fee strip */
+  .fees { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border-top: 1px solid var(--rule); }
+  .fees div { padding: 12px 14px 12px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 2px; }
+  .fees b { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; }
+  .fees span { color: var(--muted); font-size: 0.92rem; }
+
+  /* Process stepper */
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; counter-reset: step; }
+  .steps li { counter-increment: step; display: grid; gap: 6px; align-content: start; padding: 0 10px 0 0; position: relative; }
+  .steps li::before {
+    content: counter(step); width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font: 500 0.85rem/1 var(--mono);
+    background: var(--surface); border: 1.5px solid var(--green); color: var(--green); position: relative; z-index: 1;
+  }
+  .steps li::after { content: ""; position: absolute; top: 15px; left: 30px; right: 0; height: 1.5px; background: var(--rule); }
+  .steps li:last-child::after { display: none; }
+  .steps b { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+  .steps span { font-size: 0.85rem; color: var(--muted); line-height: 1.4; }
+  @media (max-width: 760px) {
+    .steps { grid-template-columns: 1fr; gap: 12px; }
+    .steps li { grid-template-columns: 30px 1fr; column-gap: 12px; padding: 0; }
+    .steps li::before { grid-row: span 2; }
+    .steps li::after { top: 30px; bottom: -12px; left: 14.25px; right: auto; width: 1.5px; height: auto; }
+  }
+
+  /* Client triad */
+  .triad { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .triad .panel h3 { color: var(--green); }
+  .triad .panel p { font-size: 0.95rem; }
+  .callout { border-left: 3px solid var(--brass); padding: 4px 0 4px 16px; font-family: var(--serif); font-size: 1.12rem; line-height: 1.45; max-width: 64ch; }
+
+  /* Charts */
+  figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 18px 12px; display: grid; gap: 10px; }
+  figcaption { display: grid; gap: 4px; }
+  figcaption .src { font-size: 0.8rem; color: var(--muted); }
+  .chart { overflow-x: auto; }
+  .chart svg { width: 100%; min-width: 480px; height: auto; display: block; }
+  svg text { font-family: var(--sans); font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  svg .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--rule); stroke-width: 1.5; }
+  svg .l-early { fill: none; stroke: var(--green); stroke-width: 3; stroke-linejoin: round; }
+  svg .l-late { fill: none; stroke: var(--brass); stroke-width: 3; stroke-linejoin: round; }
+  svg .area-early { fill: var(--green-soft); }
+  svg .dot-g { fill: var(--green); }
+  svg .dot-b { fill: var(--brass); }
+  svg .val { font-weight: 600; font-size: 13px; }
+  svg .val-g { fill: var(--green); }
+  svg .val-b { fill: var(--brass); }
+  svg .infl { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  svg .infl-t { fill: var(--warn); }
+  svg .pt-label { fill: var(--ink); font-weight: 600; font-size: 13px; }
+  svg .halo { fill: var(--green-soft); }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  .fact { display: grid; gap: 4px; align-content: start; }
+  .fact b { font-family: var(--serif); font-size: 1.6rem; line-height: 1.1; font-weight: 600; color: var(--green); font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 0.92rem; color: var(--muted); }
+
+  /* Tables */
+  .tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 500 0.72rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--paper); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .foot { font-size: 0.8rem; color: var(--muted); }
+
+  /* Four pillars */
+  .pillars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 640px) { .pillars { grid-template-columns: 1fr; } }
+  .pillars .panel ul { font-size: 0.92rem; }
+
+  /* Behavior + compliance */
+  .bias { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; }
+  .bias div { display: grid; gap: 2px; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .bias b { font-weight: 600; }
+  .bias span { font-size: 0.92rem; color: var(--muted); }
+  .never { background: var(--warn-soft); border-radius: 6px; padding: 16px 20px; display: grid; gap: 8px; }
+  .never .label { color: var(--warn); }
+  .never ul { font-size: 0.95rem; }
+
+  /* Licenses */
+  .lic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 640px) { .lic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .lic div { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 10px 14px; display: grid; gap: 2px; }
+  .lic b { font: 500 0.95rem/1.2 var(--mono); color: var(--green); }
+  .lic span { font-size: 0.85rem; color: var(--muted); }
+
+  /* Q&A */
+  .qa { display: grid; gap: 12px; }
+  .q { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 8px 24px; }
+  .q h3 { font-size: 1.05rem; }
+  .q .frame { font-size: 0.94rem; display: grid; gap: 6px; }
+  .q .frame em { font-style: normal; font-family: var(--mono); font-size: 0.8rem; color: var(--brass); letter-spacing: 0.04em; }
+  @media (max-width: 700px) { .q { grid-template-columns: 1fr; } }
+
+  /* Day-of */
+  .dayof { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .check { list-style: none; padding: 0; }
+  .check li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; font-size: 0.95rem; }
+  .check li::before { content: ""; width: 14px; height: 14px; margin-top: 5px; border: 1.5px solid var(--green); border-radius: 3px; }
+  footer { border-top: 2px solid var(--ink); padding-top: 16px; font-size: 0.82rem; color: var(--muted); display: grid; gap: 6px; }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="mast-top">
+      <span class="label"><b>Advisor Foundations</b> · Module 01 · Interview Readiness</span>
+      <span class="label">Trainee edition · Sept 2026</span>
+    </div>
+    <h1>The Advisor Interview Primer</h1>
+    <p class="lede">The concepts a hiring manager expects a new financial advisor to explain clearly: the standard of care, the planning process, portfolio basics, accounts, and how to answer the questions you will be asked.</p>
+    <div class="meta">
+      <div><span class="label">Read time</span><span>5 minutes</span></div>
+      <div><span class="label">Audience</span><span>Advisor candidates, new trainees</span></div>
+      <div><span class="label">How to use</span><span>Read once for shape, re-read for detail</span></div>
+    </div>
+  </header>
+
+  <!-- 0:00 -->
+  <section id="sixty">
+    <div class="clock">0:00</div>
+    <div class="body">
+      <div class="sixty">
+        <span class="label" style="color:inherit;opacity:.8">If you remember nothing else</span>
+        <h2>The 60-second version</h2>
+        <ol>
+          <li><strong>The client's interest comes first.</strong> Know the difference between a fiduciary and the best-interest standard.</li>
+          <li><strong>Plan first, then pick products.</strong> Goals and risk drive the portfolio, never the other way around.</li>
+          <li><strong>Asset allocation matters most.</strong> Diversify, rebalance, and match risk to the time horizon.</li>
+          <li><strong>Time is the biggest lever.</strong> Compounding rewards starting early. Inflation punishes sitting in cash.</li>
+          <li><strong>The job is behavioral coaching.</strong> Keeping clients invested through a downturn is where advisors earn their fee.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1:00 -->
+  <section id="role">
+    <div class="clock">1:00</div>
+    <div class="body">
+      <span class="label">The role</span>
+      <h2>Who you serve, the standard you're held to, and how you're paid</h2>
+      <div class="pair">
+        <div class="panel">
+          <span class="tag">Fiduciary · RIA</span>
+          <h3>Registered Investment Adviser</h3>
+          <p>Owes a <strong>fiduciary duty</strong> under the Investment Advisers Act of 1940: loyalty and care, <strong>ongoing</strong>, across the whole relationship. Conflicts must be avoided or fully disclosed. Regulated by the SEC or the state.</p>
+        </div>
+        <div class="panel">
+          <span class="tag brass">Best interest · Broker-dealer</span>
+          <h3>Registered Representative</h3>
+          <p>Held to <strong>Regulation Best Interest</strong> (Reg BI, 2020) <strong>at the time of each recommendation</strong>. It replaced the older "suitability" standard. Typically paid by commission. Regulated by FINRA and the SEC.</p>
+        </div>
+      </div>
+      <p>Many advisors are <strong>dual-registered</strong> and wear both hats. Be ready to say which hat applies to a given recommendation, and disclose it on <strong>Form CRS</strong>.</p>
+      <div class="fees">
+        <div><b>% of AUM</b><span>~1% a year on assets managed, often tiered lower as assets grow</span></div>
+        <div><b>Flat or retainer</b><span>Fixed annual or monthly planning fee</span></div>
+        <div><b>Hourly</b><span>Pay per project or advice session</span></div>
+        <div><b>Commission</b><span>Paid per product sold: insurance, annuities, some funds</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1:40 -->
+  <section id="process">
+    <div class="clock">1:40</div>
+    <div class="body">
+      <span class="label">The planning process · CFP Board, 7 steps</span>
+      <h2>Every client relationship follows the same path</h2>
+      <ol class="steps">
+        <li><b>Understand</b><span>the client's personal and financial situation</span></li>
+        <li><b>Identify</b><span>and select goals</span></li>
+        <li><b>Analyze</b><span>the current course and alternatives</span></li>
+        <li><b>Develop</b><span>recommendations</span></li>
+        <li><b>Present</b><span>the recommendations</span></li>
+        <li><b>Implement</b><span>the plan</span></li>
+        <li><b>Monitor</b><span>progress and update</span></li>
+      </ol>
+      <p class="callout">Interview tip: when asked "how would you work with a new client?", walk through these steps in order. It shows you plan before you sell.</p>
+    </div>
+  </section>
+
+  <!-- 2:10 -->
+  <section id="client">
+    <div class="clock">2:10</div>
+    <div class="body">
+      <span class="label">Know your client</span>
+      <h2>Three inputs set the right amount of risk</h2>
+      <div class="triad">
+        <div class="panel"><h3>Risk tolerance</h3><p>How much volatility the client is <strong>willing</strong> to stomach. It's emotional, so measure it with a questionnaire and a conversation.</p></div>
+        <div class="panel"><h3>Risk capacity</h3><p>How much loss the client can <strong>afford</strong>: income, net worth, emergency fund, debts, dependents. It's financial.</p></div>
+        <div class="panel"><h3>Time horizon</h3><p>When the money is needed. Longer horizons can recover from drawdowns. Money needed within 1–3 years belongs in safer assets.</p></div>
+      </div>
+      <p>When tolerance and capacity disagree, the <strong>lower one wins</strong>. An aggressive 62-year-old with no savings cushion still gets a conservative plan.</p>
+    </div>
+  </section>
+
+  <!-- 2:30 -->
+  <section id="portfolio">
+    <div class="clock">2:30</div>
+    <div class="body">
+      <span class="label">Portfolio basics</span>
+      <h2>More expected return always costs more volatility</h2>
+      <figure>
+        <figcaption>
+          <h3>Risk vs. return by asset class, long-run U.S. history</h3>
+          <span class="src">Annualized return vs. annual volatility (standard deviation), rounded, approximately 1926–present. Figures are illustrative; past performance does not guarantee future results.</span>
+        </figcaption>
+        <div class="chart">
+          <svg viewBox="0 0 640 290" role="img" aria-label="Scatter plot: cash about 3 percent return with 3 percent volatility; bonds about 5 percent with 10 percent; large-cap stocks about 10 percent with 20 percent; small-cap stocks about 12 percent with 30 percent. Inflation line at about 3 percent.">
+            <line class="gridline" x1="60" y1="54.9" x2="620" y2="54.9"/>
+            <line class="gridline" x1="60" y1="116.6" x2="620" y2="116.6"/>
+            <line class="gridline" x1="60" y1="178.3" x2="620" y2="178.3"/>
+            <line class="axis" x1="60" y1="240" x2="620" y2="240"/>
+            <text x="50" y="244" text-anchor="end">0%</text>
+            <text x="50" y="182" text-anchor="end">4%</text>
+            <text x="50" y="120" text-anchor="end">8%</text>
+            <text x="50" y="59" text-anchor="end">12%</text>
+            <text x="60" y="260" text-anchor="middle">0%</text>
+            <text x="217.1" y="260" text-anchor="middle">10%</text>
+            <text x="374.3" y="260" text-anchor="middle">20%</text>
+            <text x="531.4" y="260" text-anchor="middle">30%</text>
+            <text x="340" y="282" text-anchor="middle">Volatility (risk) →</text>
+            <text x="14" y="140" text-anchor="middle" transform="rotate(-90 14 140)">Return →</text>
+            <line class="infl" x1="60" y1="193.7" x2="620" y2="193.7"/>
+            <text class="infl-t" x="616" y="187" text-anchor="end">Inflation ≈ 3%: cash barely keeps pace</text>
+            <circle class="halo" cx="107.1" cy="193.7" r="14"/><circle class="dot-g" cx="107.1" cy="193.7" r="6"/>
+            <text class="pt-label" x="107.1" y="222" text-anchor="middle">Cash ~3%</text>
+            <circle class="halo" cx="217.1" cy="162.9" r="14"/><circle class="dot-g" cx="217.1" cy="162.9" r="6"/>
+            <text class="pt-label" x="217.1" y="144" text-anchor="middle">Bonds ~5%</text>
+            <circle class="halo" cx="374.3" cy="85.7" r="14"/><circle class="dot-g" cx="374.3" cy="85.7" r="6"/>
+            <text class="pt-label" x="374.3" y="67" text-anchor="middle">Large-cap stocks ~10%</text>
+            <circle class="halo" cx="531.4" cy="54.9" r="14"/><circle class="dot-g" cx="531.4" cy="54.9" r="6"/>
+            <text class="pt-label" x="531.4" y="36" text-anchor="middle">Small-cap stocks ~12%</text>
+          </svg>
+        </div>
+      </figure>
+      <div class="facts">
+        <div class="fact"><b>Asset allocation</b><span>The stock/bond/cash mix explains most of the variation in a portfolio's returns over time (Brinson studies, ~90%).</span></div>
+        <div class="fact"><b>Diversification</b><span>Owning assets that don't move together lowers risk without giving up as much return. It reduces risk but doesn't remove it.</span></div>
+        <div class="fact"><b>Rebalancing</b><span>Trim what grew, add to what lagged, and get back to the target mix. This forces "buy low, sell high."</span></div>
+        <div class="fact"><b>Rates ↑ = bond prices ↓</b><span>Bond prices move opposite to interest rates. Longer duration means bigger price swings.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3:00 -->
+  <section id="time">
+    <div class="clock">3:00</div>
+    <div class="body">
+      <span class="label">Time value of money</span>
+      <h2>Ten extra years roughly doubles the result</h2>
+      <figure>
+        <figcaption>
+          <h3>$500 a month ($6,000/yr) invested at a 7% annual return, until age 65</h3>
+          <span class="src">Hypothetical illustration, contributions at year end, no taxes or fees. Not a projection for any investment.</span>
+        </figcaption>
+        <div class="chart">
+          <svg viewBox="0 0 770 290" role="img" aria-label="Line chart: starting at 25 grows to about 1.2 million dollars by 65 on 240 thousand contributed; starting at 35 grows to about 567 thousand dollars on 180 thousand contributed.">
+            <line class="gridline" x1="60" y1="24" x2="620" y2="24"/>
+            <line class="gridline" x1="60" y1="71.2" x2="620" y2="71.2"/>
+            <line class="gridline" x1="60" y1="118.4" x2="620" y2="118.4"/>
+            <line class="gridline" x1="60" y1="165.6" x2="620" y2="165.6"/>
+            <line class="gridline" x1="60" y1="212.8" x2="620" y2="212.8"/>
+            <line class="axis" x1="60" y1="260" x2="620" y2="260"/>
+            <text x="52" y="264" text-anchor="end">$0</text>
+            <text x="52" y="217" text-anchor="end">$250k</text>
+            <text x="52" y="170" text-anchor="end">$500k</text>
+            <text x="52" y="122" text-anchor="end">$750k</text>
+            <text x="52" y="75" text-anchor="end">$1M</text>
+            <text x="52" y="28" text-anchor="end">$1.25M</text>
+            <text x="60" y="280" text-anchor="middle">Age 25</text>
+            <text x="200" y="280" text-anchor="middle">35</text>
+            <text x="340" y="280" text-anchor="middle">45</text>
+            <text x="480" y="280" text-anchor="middle">55</text>
+            <text x="620" y="280" text-anchor="end">65</text>
+            <path class="l-early" d="M60.0,260.0 L74.0,258.9 L88.0,257.7 L102.0,256.4 L116.0,255.0 L130.0,253.5 L144.0,251.9 L158.0,250.2 L172.0,248.4 L186.0,246.4 L200.0,244.3 L214.0,242.1 L228.0,239.7 L242.0,237.2 L256.0,234.5 L270.0,231.5 L284.0,228.4 L298.0,225.1 L312.0,221.5 L326.0,217.7 L340.0,213.6 L354.0,209.2 L368.0,204.5 L382.0,199.5 L396.0,194.1 L410.0,188.4 L424.0,182.2 L438.0,175.6 L452.0,168.6 L466.0,161.1 L480.0,153.0 L494.0,144.4 L508.0,135.1 L522.0,125.3 L536.0,114.7 L550.0,103.4 L564.0,91.3 L578.0,78.4 L592.0,64.5 L606.0,49.7 L620.0,33.9"/>
+            <path class="l-late" d="M200.0,260.0 L214.0,258.9 L228.0,257.7 L242.0,256.4 L256.0,255.0 L270.0,253.5 L284.0,251.9 L298.0,250.2 L312.0,248.4 L326.0,246.4 L340.0,244.3 L354.0,242.1 L368.0,239.7 L382.0,237.2 L396.0,234.5 L410.0,231.5 L424.0,228.4 L438.0,225.1 L452.0,221.5 L466.0,217.7 L480.0,213.6 L494.0,209.2 L508.0,204.5 L522.0,199.5 L536.0,194.1 L550.0,188.4 L564.0,182.2 L578.0,175.6 L592.0,168.6 L606.0,161.1 L620.0,153.0"/>
+            <circle class="dot-g" cx="620" cy="33.9" r="5"/>
+            <circle class="dot-b" cx="620" cy="153" r="5"/>
+            <text class="val val-g" x="632" y="30">Start at 25</text>
+            <text class="val val-g" x="632" y="47">$1,197,811</text>
+            <text x="632" y="63">$240,000 contributed</text>
+            <text class="val val-b" x="632" y="149">Start at 35</text>
+            <text class="val val-b" x="632" y="166">$566,765</text>
+            <text x="632" y="182">$180,000 contributed</text>
+          </svg>
+        </div>
+      </figure>
+      <div class="facts">
+        <div class="fact"><b class="num">Rule of 72</b><span>72 ÷ return rate = years to double. At 8%, money doubles in about 9 years.</span></div>
+        <div class="fact"><b>Inflation</b><span>At 3% inflation, prices double in about 24 years. "Safe" cash quietly loses buying power.</span></div>
+        <div class="fact"><b>Dollar-cost averaging</b><span>Invest a fixed amount on a schedule. It removes the need to time the market and builds the habit.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3:20 -->
+  <section id="accounts">
+    <div class="clock">3:20</div>
+    <div class="body">
+      <span class="label">Accounts · 2026 limits</span>
+      <h2>Pick the account for its tax treatment</h2>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Account</th><th>Tax treatment</th><th>2026 limit</th><th>Know this</th></tr></thead>
+          <tbody>
+            <tr><td>401(k) / 403(b)</td><td>Pre-tax or Roth, through an employer</td><td class="num">$24,500<br>+$8,000 age 50+<br>+$11,250 ages 60–63</td><td>Capture the full employer match first; it's an immediate return. High earners' catch-ups must go Roth starting in 2026.</td></tr>
+            <tr><td>Traditional IRA</td><td>Deduct now, taxed at withdrawal</td><td class="num">$7,500<br>+$1,100 age 50+</td><td>Deduction phases out if covered by a workplace plan above income limits.</td></tr>
+            <tr><td>Roth IRA</td><td>Taxed now, tax-free withdrawal</td><td class="num">Shares IRA limit</td><td>Best when you expect a higher tax bracket later. No RMDs for the original owner. Income limits apply.</td></tr>
+            <tr><td>HSA</td><td>Triple tax advantage</td><td class="num">$4,400 self<br>$8,750 family</td><td>Needs a high-deductible health plan. Deductible in, tax-free growth, tax-free out for medical costs.</td></tr>
+            <tr><td>529 plan</td><td>Tax-free for education</td><td class="num">No annual federal limit</td><td>Up to $35,000 lifetime can roll to the beneficiary's Roth IRA (account open 15+ years).</td></tr>
+            <tr><td>Taxable brokerage</td><td>Gains taxed yearly or at sale</td><td class="num">None</td><td>Long-term (1+ year) gains get lower rates. Tax-loss harvesting lives here.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="foot">Limits per IRS announcements for tax year 2026. Confirm current figures at IRS.gov before quoting them to a client.</p>
+    </div>
+  </section>
+
+  <!-- 3:50 -->
+  <section id="pillars">
+    <div class="clock">3:50</div>
+    <div class="body">
+      <span class="label">Beyond investments</span>
+      <h2>A plan covers four more areas</h2>
+      <div class="pillars">
+        <div class="panel"><h3>Retirement income</h3><ul><li><strong>4% rule:</strong> a starting withdrawal rate that historically lasted 30 years</li><li>Social Security full retirement age: <strong>67</strong> (born 1960+)</li><li>RMDs begin at <strong>73</strong></li><li>Sequence risk: a crash early in retirement hurts most</li></ul></div>
+        <div class="panel"><h3>Risk management</h3><ul><li><strong>Term life</strong>: cheap, temporary, pure protection</li><li><strong>Permanent</strong> (whole, universal): lifelong coverage plus cash value, costs more</li><li>Disability insurance protects the biggest asset, which is future income</li><li>Emergency fund: 3–6 months of expenses</li></ul></div>
+        <div class="panel"><h3>Tax planning</h3><ul><li><strong>Asset location:</strong> hold tax-inefficient assets in tax-advantaged accounts</li><li>Tax-loss harvesting offsets gains</li><li>Roth conversions in low-income years</li></ul></div>
+        <div class="panel"><h3>Estate planning</h3><ul><li>Will, power of attorney, healthcare directive</li><li><strong>Beneficiary designations override a will</strong>, so review them yearly</li><li>Trusts can avoid probate and control distribution</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4:10 -->
+  <section id="behavior">
+    <div class="clock">4:10</div>
+    <div class="body">
+      <span class="label">Behavior &amp; compliance</span>
+      <h2>Clients' biggest risk is usually their own reactions</h2>
+      <div class="bias">
+        <div><b>Loss aversion</b><span>Losses feel about twice as painful as equal gains feel good.</span></div>
+        <div><b>Recency bias</b><span>Assuming the last few months will continue forever.</span></div>
+        <div><b>Herd behavior</b><span>Buying what everyone is buying, usually near the top.</span></div>
+        <div><b>Anchoring</b><span>Fixating on a purchase price or an old account high.</span></div>
+      </div>
+      <div class="never">
+        <span class="label">Never say or do</span>
+        <ul>
+          <li>Guarantee a return, or call any investment "risk-free"</li>
+          <li>Recommend a product before you understand the client's goals and risk profile</li>
+          <li>Skip documentation. If it isn't written down, it didn't happen.</li>
+        </ul>
+      </div>
+      <div class="lic">
+        <div><b>SIE</b><span>Industry basics, taken first</span></div>
+        <div><b>Series 7</b><span>Sell securities (broker)</span></div>
+        <div><b>Series 66</b><span>Combined state + adviser (= 63 + 65)</span></div>
+        <div><b>Series 65</b><span>Investment adviser rep</span></div>
+        <div><b>Life &amp; Health</b><span>State insurance license</span></div>
+        <div><b>CFP®</b><span>Gold-standard planning credential</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4:30 -->
+  <section id="questions">
+    <div class="clock">4:30</div>
+    <div class="body">
+      <span class="label">Likely questions · answer frames</span>
+      <h2>What they'll ask, and how to structure your answer</h2>
+      <div class="qa">
+        <div class="q"><h3>"Why do you want to be a financial advisor?"</h3><div class="frame"><em>STORY → SERVICE → GROWTH</em><span>A real moment money mattered to you or your family, why helping people plan motivates you, and why you want to build a long career here.</span></div></div>
+        <div class="q"><h3>"The market drops 20%. A client calls to sell everything. What do you do?"</h3><div class="frame"><em>LISTEN → RE-ANCHOR → DOCUMENT</em><span>Acknowledge the fear first. Go back to their goals and time horizon, and remind them that selling locks in the loss. If they still want to act, respect it and document it. Never promise a recovery date.</span></div></div>
+        <div class="q"><h3>"Explain a Roth IRA like I'm 20 years old."</h3><div class="frame"><em>ANALOGY → ONE NUMBER → CHECK</em><span>"Pay the tax on the seed, not the harvest." You pay tax now, and everything it grows into comes out tax-free in retirement. Then ask: "Does that make sense?"</span></div></div>
+        <div class="q"><h3>"How will you find clients?"</h3><div class="frame"><em>NETWORK → NICHE → PARTNERS → ACTIVITY</em><span>Your natural market, a niche you understand (e.g. teachers, young families), referrals from CPAs and attorneys, and a daily activity goal you track, such as calls and meetings per week.</span></div></div>
+        <div class="q"><h3>"Tell me about a time you faced rejection or failure."</h3><div class="frame"><em>STAR: SITUATION → TASK → ACTION → RESULT</em><span>A real example where you heard "no" and kept going. End with what you learned. Advisors hear "no" daily, so they're testing resilience.</span></div></div>
+        <div class="q"><h3>"What's the difference between a fiduciary and a broker?"</h3><div class="frame"><em>DEFINE → CONTRAST → WHY IT MATTERS</em><span>Fiduciary duty is ongoing, under the Advisers Act. Reg BI applies at each recommendation. Then say you would put the client first whichever hat you're wearing.</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5:00 -->
+  <section id="dayof">
+    <div class="clock">5:00</div>
+    <div class="body">
+      <span class="label">Before you walk in</span>
+      <h2>Day-of checklist</h2>
+      <div class="dayof">
+        <div class="panel">
+          <h3>Look up this morning</h3>
+          <ul class="check">
+            <li>Where the S&amp;P 500 and Dow closed yesterday</li>
+            <li>The current Fed funds rate and 10-year Treasury yield</li>
+            <li>One market headline you can discuss in two sentences</li>
+            <li>The firm's clients, fee model, and whether it's an RIA, a broker-dealer, or both</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Questions to ask them</h3>
+          <ul class="check">
+            <li>What does training and licensing sponsorship look like in the first 12 months?</li>
+            <li>How are new advisors paid during the ramp-up period?</li>
+            <li>Where do clients come from: firm leads or my own book?</li>
+            <li>What does success look like at 90 days and at one year?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="label">Advisor Foundations · Module 01</span>
+    <span>For training and interview preparation only. Not investment, tax, or legal advice. Historical and hypothetical figures are illustrative and rounded; verify current limits and rules with the IRS, SEC, and FINRA.</span>
+  </footer>
+
+</div>
