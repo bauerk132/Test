@@ -3,7 +3,11 @@
 import argparse
 import re
 import sys
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+
+from markdown_notes import build_markdown
+from transcript_file import read_transcript_file
 
 # YouTube video IDs are 11 characters: letters, digits, "-" and "_".
 VIDEO_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{11}")
@@ -42,17 +46,47 @@ def extract_video_id(url_or_id: str) -> str:
     raise ValueError(f"Couldn't find a YouTube video ID in: {url_or_id!r}")
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Turn a YouTube lecture into Markdown notes.")
-    parser.add_argument("url", help="YouTube video URL or 11-character video ID")
-    args = parser.parse_args()
+    parser.add_argument("url", nargs="?", help="YouTube video URL or 11-character video ID")
+    parser.add_argument(
+        "--transcript-file",
+        help="text file with a transcript copied from YouTube's 'Show transcript' panel",
+    )
+    parser.add_argument("--title", help="title for the notes (default: the file name or video ID)")
+    parser.add_argument("-o", "--output", help="where to save the notes (default: <name>-notes.md)")
+    parser.add_argument("--force", action="store_true", help="overwrite the output file if it exists")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not args.transcript_file:
+        parser.error("downloading captions isn't built yet: use --transcript-file")
 
     try:
-        video_id = extract_video_id(args.url)
+        video_id = extract_video_id(args.url) if args.url else None
+        segments = read_transcript_file(args.transcript_file)
+    except FileNotFoundError:
+        sys.exit(f"Error: file not found: {args.transcript_file}")
     except ValueError as error:
         sys.exit(f"Error: {error}")
 
-    print(f"Video ID: {video_id}")
+    name = Path(args.transcript_file).stem
+    output = Path(args.output) if args.output else Path(f"{name}-notes.md")
+    # Never silently replace notes the user may have edited.
+    if output.exists() and not args.force:
+        sys.exit(f"Error: {output} already exists (use --force to replace it, or -o to pick another name)")
+
+    markdown = build_markdown(
+        segments,
+        title=args.title or name,
+        video_id=video_id,
+        source=args.transcript_file,
+    )
+    output.write_text(markdown, encoding="utf-8")
+    print(f"Saved {len(segments)} caption lines to {output}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Smoke test for the lecture-notes CLI: representative inputs, exit codes, output, then the unit tests.
+# Smoke test for the lecture-notes CLI: representative inputs, exit codes, output files, then the unit tests.
 set -u
 cd "$(dirname "$0")/../../.."
 PY=.venv/bin/python
+SAMPLE=fixtures/sample_paste.txt
+OUT=$(mktemp -d)
+trap 'rm -rf "$OUT"' EXIT
 fail=0
 
 # check <expected-exit-code> <expected-output-substring> <args...>
@@ -21,12 +24,25 @@ check() {
   fi
 }
 
-check 0 "Video ID: abcDEF12345" "https://www.youtube.com/watch?v=abcDEF12345&t=120s"
-check 0 "Video ID: abcDEF12345" "https://youtu.be/abcDEF12345?si=xyz"
-check 0 "Video ID: abcDEF12345" "abcDEF12345"
-check 1 "Couldn't find a YouTube video ID" "https://example.com/video"
-check 1 "Couldn't find a YouTube video ID" "https://www.youtube.com.evil.example/watch?v=abcDEF12345"
-check 2 "the following arguments are required: url"
+# check_file <file> <expected-substring>
+check_file() {
+  if grep -qF -- "$2" "$1" 2>/dev/null; then
+    echo "PASS  $(basename "$1") contains $2"
+  else
+    echo "FAIL  $(basename "$1") is missing $2"
+    fail=1
+  fi
+}
+
+check 0 "Saved" --transcript-file "$SAMPLE" -o "$OUT/notes.md"
+check_file "$OUT/notes.md" "## Transcript"
+check 0 "Saved" "https://youtu.be/abcDEF12345?si=xyz" --transcript-file "$SAMPLE" -o "$OUT/linked.md"
+check_file "$OUT/linked.md" "https://youtu.be/abcDEF12345?t="
+check 1 "already exists" --transcript-file "$SAMPLE" -o "$OUT/notes.md"
+check 0 "Saved" --transcript-file "$SAMPLE" -o "$OUT/notes.md" --force
+check 1 "file not found" --transcript-file "$OUT/missing.txt"
+check 1 "Couldn't find a YouTube video ID" "https://example.com/video" --transcript-file "$SAMPLE"
+check 2 "usage:"
 
 "$PY" -m pytest -q || fail=1
 

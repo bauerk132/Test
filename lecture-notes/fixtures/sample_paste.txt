@@ -1,0 +1,135 @@
+Skip navigation
+Search
+Create
+9+
+Next:Hexadecimal Without Tears | Intro to Computing, Lesson 4
+Transcript
+Search in video
+
+0:00
+0:01
+Hi everyone, and welcome back to Tidewater Night School.
+0:05
+Today we're going to learn how computers count using only two digits.
+0:10
+This system is called binary, or base two.
+0:14
+Let's start with something familiar: the decimal system you use every day.
+0:20
+In decimal we have ten digits, zero through nine,
+0:24
+and each position in a number is worth ten times the position to its right.
+0:30
+So the number 352 means three hundreds, five tens, and two ones.
+0:37
+Binary works the same way, except each position is worth two times the one to its right.
+0:44
+
+The positions are worth one, two, four, eight, sixteen, and so on.
+0:50
+And instead of ten digits, we only get two: zero and one.
+0:55
+Each of those digits is called a bit, which is short for binary digit.
+1:01
+Let's try reading a binary number together.
+1:05
+Take one, zero, one, one.
+1:08
+Reading from the right, we have a one in the ones place,
+1:12
+a one in the twos place,
+1:15
+a zero in the fours place,
+1:18
+and a one in the eights place.
+1:21
+Eight plus two plus one gives us eleven.
+1:26
+So one-zero-one-one in binary is eleven in decimal.
+
+1:31
+Now let's go the other way and turn a decimal number into binary.
+1:36
+A handy trick is to keep dividing by two and write down the remainders.
+1:42
+Let's convert thirteen.
+1:45
+Thirteen divided by two is six, remainder one.
+1:50
+Six divided by two is three, remainder zero.
+1:54
+Three divided by two is one, remainder one.
+1:58
+And one divided by two is zero, remainder one.
+2:03
+Now read the remainders from bottom to top: one, one, zero, one.
+2:09
+That's thirteen in binary.
+2:12
+You can check it: eight plus four plus one is thirteen.
+2:18
+Why do computers bother with this?
+2:21
+Because a wire can easily be either on or off,
+2:25
+and those two states map neatly onto one and zero.
+2:30
+Eight bits grouped together make a byte, which can store any number from zero to 255.
+2:38
+For practice, try converting your age into binary before the next lesson.
+2:44
+Next time we'll look at adding two binary numbers together.
+2:49
+Thanks for watching, and I'll see you then!
+2:53
+Ask about this video
+Hi there! Curious about this lesson? I can help you explore it.
+Not sure what to ask? Choose something:
+Summarize the video
+Explain the division trick
+Quiz me on binary
+
+Binary Numbers from Scratch | Intro to Computing, Lesson 3
+Tidewater Night School
+3.1K subscribers
+Subscribe
+212
+Share
+Save
+4,806 views  Mar 3, 2025  Intro to Computing
+In this lesson we learn how computers count with only two digits.
+Chapters:
+0:00 Welcome
+0:14 Decimal refresher
+1:01 Reading binary
+1:31 Converting decimal to binary
+2:18 Why computers use binary
+...more
+
+12:52
+Hexadecimal Without Tears | Intro to Computing, Lesson 4
+Tidewater Night School
+2.9K views 1 year ago
+8:17
+How a Single Transistor Stores a Bit
+Gadget Garden Lab
+41K views 2 years ago
+1:04:36
+Full Course: Logic Gates for Absolute Beginners
+Open Bench Academy
+310K views 3 years ago
+Show more
+
+27 Comments
+Sort by
+Add a comment...
+@quietpixel42
+4 months ago
+The division trick finally made this click for me. Thank you!
+3
+Reply
+@marisol.codes
+2 months ago
+1:45
+is where it clicked for me. Converted my age: 100010.
+Reply
