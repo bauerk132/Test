@@ -61,7 +61,7 @@ Follow [template.md](template.md). [example.md](example.md) shows a finished gui
 Save to `study-guides/<slug>-study-guide.md` at the repo root. The slug is the title in lowercase with hyphens.
 
 - If that file already exists, add `-2`, `-3`, and so on. Never overwrite a guide, since the user may have edited it.
-- Don't commit unless the user asks.
+- Don't commit unless the user asks. `study-guides/` is in the root `.gitignore` because this repo is public, so committing a guide on purpose needs `git add -f`.
 - In a cloud session, tell the user the file is lost when the session ends unless they download it or ask you to commit it.
 - Guides of someone else's lecture are for personal study. Say so if the user wants to push them to a public repo.
 

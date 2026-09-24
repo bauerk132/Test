@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Study guides from /study-guide are personal notes on other people's lectures.
+# Kept out of this public repo by default; use `git add -f` to commit one on purpose.
+study-guides/
