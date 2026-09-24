@@ -42,6 +42,9 @@ check 1 "already exists" --transcript-file "$SAMPLE" -o "$OUT/notes.md"
 check 0 "Saved" --transcript-file "$SAMPLE" -o "$OUT/notes.md" --force
 check 1 "file not found" --transcript-file "$OUT/missing.txt"
 check 1 "Couldn't find a YouTube video ID" "https://example.com/video" --transcript-file "$SAMPLE"
+# Link mode with a made-up ID fails either way: "Couldn't reach YouTube" where it's blocked,
+# "Couldn't find that video" / "no captions" where it isn't.
+check 1 "Error:" abcDEF12345 -o "$OUT/download.md"
 check 2 "usage:"
 
 "$PY" -m pytest -q || fail=1

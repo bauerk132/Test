@@ -106,3 +106,50 @@ def test_bad_url_with_transcript_file(tmp_path):
 
 def test_no_arguments_is_a_usage_error():
     assert run_cli([]) == 2
+
+
+def test_url_downloads_captions(tmp_path, monkeypatch, capsys):
+    from segments import Segment
+
+    requested = []
+
+    def fake_fetch(video_id):
+        requested.append(video_id)
+        return [Segment(1, "Welcome back."), Segment(65, "Binary uses two digits.")]
+
+    monkeypatch.setattr("notes.fetch_segments", fake_fetch)
+    monkeypatch.chdir(tmp_path)
+    assert run_cli([f"https://youtu.be/{VIDEO_ID}"]) is None
+
+    assert requested == [VIDEO_ID]
+    notes = (tmp_path / f"{VIDEO_ID}-notes.md").read_text(encoding="utf-8")
+    assert notes.startswith(f"# YouTube video {VIDEO_ID}\n")
+    assert f"**[1:05](https://youtu.be/{VIDEO_ID}?t=65)**" in notes
+    assert "Downloading captions" in capsys.readouterr().out
+
+
+def test_transcript_file_wins_over_download(tmp_path, monkeypatch):
+    def fail_fetch(video_id):
+        raise AssertionError("should not download when a transcript file is given")
+
+    monkeypatch.setattr("notes.fetch_segments", fail_fetch)
+    args = [f"https://youtu.be/{VIDEO_ID}", "--transcript-file", str(SAMPLE_PASTE)]
+    assert run_cli(args + ["-o", str(tmp_path / "out.md")]) is None
+
+
+def test_download_failure_is_a_friendly_error(tmp_path, monkeypatch):
+    from youtube_fetch import FetchError
+
+    def blocked_fetch(video_id):
+        raise FetchError("Couldn't reach YouTube: check your internet connection.")
+
+    monkeypatch.setattr("notes.fetch_segments", blocked_fetch)
+    monkeypatch.chdir(tmp_path)
+    assert run_cli([VIDEO_ID]) == "Error: Couldn't reach YouTube: check your internet connection."
+    assert not (tmp_path / f"{VIDEO_ID}-notes.md").exists()
+
+
+def test_empty_download_is_an_error(tmp_path, monkeypatch):
+    monkeypatch.setattr("notes.fetch_segments", lambda video_id: [])
+    monkeypatch.chdir(tmp_path)
+    assert run_cli([VIDEO_ID]) == "Error: the video's captions are empty"

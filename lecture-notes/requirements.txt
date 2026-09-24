@@ -1,1 +1,2 @@
 pytest==9.1.1
+youtube-transcript-api==1.2.4

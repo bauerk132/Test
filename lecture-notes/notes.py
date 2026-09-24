@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 from markdown_notes import build_markdown
 from transcript_file import read_transcript_file
+from youtube_fetch import FetchError, fetch_segments
 
 # YouTube video IDs are 11 characters: letters, digits, "-" and "_".
 VIDEO_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{11}")
@@ -62,26 +63,34 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not args.transcript_file:
-        parser.error("downloading captions isn't built yet: use --transcript-file")
+    if not args.url and not args.transcript_file:
+        parser.error("give a YouTube URL, --transcript-file, or both")
 
     try:
         video_id = extract_video_id(args.url) if args.url else None
-        segments = read_transcript_file(args.transcript_file)
+        if args.transcript_file:
+            segments = read_transcript_file(args.transcript_file)
+        else:
+            print(f"Downloading captions for video {video_id}...")
+            segments = fetch_segments(video_id)
     except FileNotFoundError:
         sys.exit(f"Error: file not found: {args.transcript_file}")
-    except ValueError as error:
+    except (ValueError, FetchError) as error:
         sys.exit(f"Error: {error}")
 
-    name = Path(args.transcript_file).stem
+    if not segments:
+        sys.exit("Error: the video's captions are empty")
+
+    name = Path(args.transcript_file).stem if args.transcript_file else video_id
     output = Path(args.output) if args.output else Path(f"{name}-notes.md")
     # Never silently replace notes the user may have edited.
     if output.exists() and not args.force:
         sys.exit(f"Error: {output} already exists (use --force to replace it, or -o to pick another name)")
 
+    default_title = name if args.transcript_file else f"YouTube video {video_id}"
     markdown = build_markdown(
         segments,
-        title=args.title or name,
+        title=args.title or default_title,
         video_id=video_id,
         source=args.transcript_file,
     )
