@@ -119,6 +119,21 @@ the OSI model and why it matters for the exam...
 physical layer. This is anything that moves raw bits...
 ```
 
+## Turning notes into a study guide
+
+This tool gives you a clean transcript. To get a **study guide** from it (key
+terms, main ideas with timestamps, exam tips, and a self-quiz with hidden
+answers), open Claude Code in this repo and run the `/study-guide` skill:
+
+```text
+/study-guide https://www.youtube.com/watch?v=VIDEO_ID
+/study-guide lecture.txt
+/study-guide            (then paste the whole YouTube page)
+```
+
+It runs this tool for you, then writes `study-guides/<title>-study-guide.md`.
+The instructions are in `.claude/skills/study-guide/SKILL.md`.
+
 ## Running the tests
 
 ```bash
