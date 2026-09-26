@@ -1,6 +1,6 @@
 import React from 'react';
 import { ModuleId } from '../types';
-import { Check, Sparkles, Compass, Edit3, ArrowRight, BookOpen, Layers, CheckCircle2 } from 'lucide-react';
+import { Check, Sparkles, Compass, Edit3, ArrowRight, BookOpen, CheckCircle2 } from 'lucide-react';
 
 interface ModuleSelectorProps {
   selectedMods: ModuleId[];
