@@ -15,6 +15,17 @@ import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, Refresh
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 
+// Pre-compute map for O(1) problem lookups
+const UNIFIED_EXAM_QUESTIONS_MAP = new Map<string, { problem: PracticeProblem; moduleId: ModuleId }>();
+Object.entries(UNIFIED_EXAM_QUESTIONS).forEach(([mId, problems]) => {
+  if (problems) {
+    const moduleId = Number(mId) as ModuleId;
+    problems.forEach((p) => {
+      UNIFIED_EXAM_QUESTIONS_MAP.set(p.id, { problem: p, moduleId });
+    });
+  }
+});
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -277,10 +288,8 @@ export default function App() {
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
     if (problemVariants[qId]) return problemVariants[qId];
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === qId);
-      if (p) return p;
-    }
+    const data = UNIFIED_EXAM_QUESTIONS_MAP.get(qId);
+    if (data && selectedMods.includes(data.moduleId)) return data.problem;
     return null;
   };
 
