@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem } from './types';
+import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem, GuidedExample } from './types';
 import { MICRO_SKILLS } from './data/microSkills';
 import { GUIDED } from './data/guidedData';
 import { UNIFIED_EXAM_QUESTIONS } from './data/unifiedExamData';
@@ -14,6 +14,20 @@ import { FormulaModal } from './components/FormulaModal';
 import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
+
+// PERFORMANCE OPTIMIZATION:
+// Pre-compute lookup maps for O(1) access to guided examples and exam problems.
+// This prevents expensive O(N*M) array iterations within loops (e.g. handleCheckStep, handleNextStep)
+// which can cause significant CPU overhead and trigger unnecessary cascading re-renders.
+const guidedMap = new Map<string, GuidedExample>();
+Object.values(GUIDED).forEach((examples) => {
+  examples.forEach((g) => guidedMap.set(g.id, g));
+});
+
+const problemMap = new Map<string, PracticeProblem>();
+Object.values(UNIFIED_EXAM_QUESTIONS).forEach((problems) => {
+  problems.forEach((p) => problemMap.set(p.id, p));
+});
 
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
@@ -99,14 +113,7 @@ export default function App() {
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
+    const targetExample = guidedMap.get(exampleId);
     if (!targetExample) return false;
 
     const step = targetExample.steps[stepIndex];
@@ -161,14 +168,7 @@ export default function App() {
   }, [selectedMods]);
 
   const handleNextStep = useCallback((exampleId: string, stepIndex: number) => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
+    const targetExample = guidedMap.get(exampleId);
     if (!targetExample) return;
 
     setGuidedState((prev) => {
@@ -197,14 +197,7 @@ export default function App() {
 
   // Generate a single problem variant with randomized numbers
   const handleGenerateVariant = useCallback((problemId: string) => {
-    let baseProblem: PracticeProblem | null = null;
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === problemId);
-      if (p) {
-        baseProblem = p;
-        break;
-      }
-    }
+    const baseProblem = problemMap.get(problemId);
     if (!baseProblem) return;
 
     const currentCount = variantCounters[problemId] || 1;
@@ -277,11 +270,7 @@ export default function App() {
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
     if (problemVariants[qId]) return problemVariants[qId];
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === qId);
-      if (p) return p;
-    }
-    return null;
+    return problemMap.get(qId) || null;
   };
 
   // Grade Practice / Test Problem
