@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, Check, Copy, Terminal, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Github, Check, Copy, Terminal, Sparkles } from 'lucide-react';
 
 interface GitHubExportModalProps {
   isOpen: boolean;
