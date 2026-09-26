@@ -11,7 +11,7 @@ import { ResultsView } from './components/ResultsView';
 import { InteractiveSandboxModal } from './components/InteractiveSandboxModal';
 import { GitHubExportModal } from './components/GitHubExportModal';
 import { FormulaModal } from './components/FormulaModal';
-import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, RefreshCw } from 'lucide-react';
+import { Compass, CheckCircle, Award, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 
