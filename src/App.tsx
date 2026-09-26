@@ -279,8 +279,12 @@ export default function App() {
     const workClean = (work || '').toLowerCase();
 
     // 1. Direct keyword match -> full credit (2 pts)
-    const isFullCredit = problem.kw.some((kw) =>
-      ansClean.includes(kw.toLowerCase().replace(/\s/g, ''))
+    if (!problem.kwClean) {
+      problem.kwClean = problem.kw.map((kw) => kw.toLowerCase().replace(/\s/g, ''));
+    }
+
+    const isFullCredit = problem.kwClean.some((kwClean) =>
+      ansClean.includes(kwClean)
     );
     if (isFullCredit) return { points: 2, status: 'correct' };
 
