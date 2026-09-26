@@ -18,7 +18,7 @@ interface PracticeCardProps {
   onWorkChange: (id: string, val: string) => void;
 }
 
-export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
+export const PracticeCard: React.FC<PracticeCardProps> = ({
   problem,
   index,
   answer,
@@ -352,6 +352,4 @@ export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
       )}
     </div>
   );
-});
-
-PracticeCard.displayName = 'PracticeCard';
+};

@@ -17,7 +17,7 @@ interface KeyGroup {
   keys: { label: string; insert: string; desc?: string }[];
 }
 
-export const MathKeypad: React.FC<MathKeypadProps> = React.memo(({
+export const MathKeypad: React.FC<MathKeypadProps> = ({
   onInsert,
   onClear,
   onBackspace,
@@ -267,6 +267,4 @@ export const MathKeypad: React.FC<MathKeypadProps> = React.memo(({
       )}
     </div>
   );
-});
-
-MathKeypad.displayName = 'MathKeypad';
+};

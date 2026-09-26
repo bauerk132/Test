@@ -1,3 +1,0 @@
-## 2024-03-22 - [App Timer Forces O(N) Re-Renders]
-**Learning:** Found a major performance bottleneck where a global timer ticking every second in `App.tsx` forces re-rendering of all heavy child components (`PracticeCard`, `GuidedCard`) and recalculation of heavy derived state (mapping exam questions, computing module scores).
-**Action:** Always wrap heavy child components mapped from arrays in `React.memo`, stabilize their callback props with `useCallback`, and memoize heavy `O(N)` derived state calculations using `useMemo`, especially when the parent component has high-frequency state updates like a timer.

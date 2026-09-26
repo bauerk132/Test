@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem } from './types';
 import { MICRO_SKILLS } from './data/microSkills';
 import { GUIDED } from './data/guidedData';
@@ -97,11 +97,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ⚡ Bolt Performance Optimization:
-  // 💡 What: Stabilized callback functions passed to child components.
-  // 🎯 Why: Recreating callbacks on every render broke `React.memo` on child cards, causing O(N) renders.
-  // 📊 Impact: Ensures stable references so that `GuidedCard` and `PracticeCard` only re-render when their specific props change.
-  const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
+  // Smart checking for guided steps
+  const handleCheckStep = (exampleId: string, stepIndex: number, userAnswer: string): boolean => {
     let targetExample = null;
     for (const m of selectedMods) {
       const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
@@ -161,9 +158,9 @@ export default function App() {
     });
 
     return isCorrect;
-  }, [selectedMods]);
+  };
 
-  const handleNextStep = useCallback((exampleId: string, stepIndex: number) => {
+  const handleNextStep = (exampleId: string, stepIndex: number) => {
     let targetExample = null;
     for (const m of selectedMods) {
       const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
@@ -188,18 +185,18 @@ export default function App() {
         },
       };
     });
-  }, [selectedMods]);
+  };
 
-  const handleAnswerChange = useCallback((qId: string, val: string) => {
+  const handleAnswerChange = (qId: string, val: string) => {
     setUserAnswers((prev) => ({ ...prev, [qId]: val }));
-  }, []);
+  };
 
-  const handleWorkChange = useCallback((qId: string, val: string) => {
+  const handleWorkChange = (qId: string, val: string) => {
     setUserWork((prev) => ({ ...prev, [qId]: val }));
-  }, []);
+  };
 
   // Generate a single problem variant with randomized numbers
-  const handleGenerateVariant = useCallback((problemId: string) => {
+  const handleGenerateVariant = (problemId: string) => {
     let baseProblem: PracticeProblem | null = null;
     for (const m of selectedMods) {
       const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === problemId);
@@ -210,19 +207,12 @@ export default function App() {
     }
     if (!baseProblem) return;
 
-    setVariantCounters((prev) => {
-      const nextCount = (prev[problemId] || 1) + 1;
-      return { ...prev, [problemId]: nextCount };
-    });
+    const currentCount = variantCounters[problemId] || 1;
+    const nextCount = currentCount + 1;
+    const newVariant = generateProblemVariant(baseProblem, nextCount);
 
-    setProblemVariants((prevVars) => {
-      const currentCount = variantCounters[problemId] || 1;
-      const nextCount = currentCount + 1;
-      return {
-        ...prevVars,
-        [problemId]: generateProblemVariant(baseProblem!, nextCount)
-      };
-    });
+    setVariantCounters((prev) => ({ ...prev, [problemId]: nextCount }));
+    setProblemVariants((prev) => ({ ...prev, [problemId]: newVariant }));
 
     // Reset user answers and work for this card so the student can work fresh
     setUserAnswers((prev) => {
@@ -235,10 +225,10 @@ export default function App() {
       delete next[problemId];
       return next;
     });
-  }, [selectedMods, variantCounters]);
+  };
 
   // Reset a problem back to the original baseline numbers
-  const handleResetVariant = useCallback((problemId: string) => {
+  const handleResetVariant = (problemId: string) => {
     setProblemVariants((prev) => {
       const next = { ...prev };
       delete next[problemId];
@@ -259,42 +249,30 @@ export default function App() {
       delete next[problemId];
       return next;
     });
-  }, []);
+  };
 
   // Bulk shuffle all problems in a module with new algorithmic variants
-  const handleShuffleModuleVariants = useCallback((modId: ModuleId) => {
+  const handleShuffleModuleVariants = (modId: ModuleId) => {
     const problems = UNIFIED_EXAM_QUESTIONS[modId] || [];
+    const updatedVariants = { ...problemVariants };
+    const updatedCounters = { ...variantCounters };
+    const updatedAnswers = { ...userAnswers };
+    const updatedWork = { ...userWork };
 
-    setVariantCounters((prevCounters) => {
-      const updatedCounters = { ...prevCounters };
-      problems.forEach((p) => {
-        const nextCount = (updatedCounters[p.id] || 1) + 1;
-        updatedCounters[p.id] = nextCount;
-      });
-      return updatedCounters;
-    });
-
-    setProblemVariants((prevVariants) => {
-      const updatedVariants = { ...prevVariants };
-      problems.forEach((p) => {
-        const currentCount = variantCounters[p.id] || 1;
-        const nextCount = currentCount + 1;
-        updatedVariants[p.id] = generateProblemVariant(p, nextCount);
-      });
-      return updatedVariants;
+    problems.forEach((p) => {
+      const currentCount = updatedCounters[p.id] || 1;
+      const nextCount = currentCount + 1;
+      updatedCounters[p.id] = nextCount;
+      updatedVariants[p.id] = generateProblemVariant(p, nextCount);
+      delete updatedAnswers[p.id];
+      delete updatedWork[p.id];
     });
 
-    setUserAnswers((prev) => {
-      const updatedAnswers = { ...prev };
-      problems.forEach((p) => delete updatedAnswers[p.id]);
-      return updatedAnswers;
-    });
-    setUserWork((prev) => {
-      const updatedWork = { ...prev };
-      problems.forEach((p) => delete updatedWork[p.id]);
-      return updatedWork;
-    });
-  }, [variantCounters]);
+    setProblemVariants(updatedVariants);
+    setVariantCounters(updatedCounters);
+    setUserAnswers(updatedAnswers);
+    setUserWork(updatedWork);
+  };
 
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
@@ -335,15 +313,10 @@ export default function App() {
     return { points: 0, status: 'wrong' };
   };
 
-  // ⚡ Bolt Performance Optimization:
-  // 💡 What: Memoized heavy derived state (`activeProblems`) using `useMemo`.
-  // 🎯 Why: Previously recalculated on every timer tick (every 1 second), causing unnecessary work.
-  // 📊 Impact: Prevents O(N) mapping operations on every second, significantly reducing main thread overhead.
-  const activeProblems: PracticeProblem[] = useMemo(() => {
-    return selectedMods.flatMap(
-      (m) => (UNIFIED_EXAM_QUESTIONS[m] || []).map((p) => problemVariants[p.id] || p)
-    );
-  }, [selectedMods, problemVariants]);
+  // Resolve all active exam problems across selected modules (incorporating active variants)
+  const activeProblems: PracticeProblem[] = selectedMods.flatMap(
+    (m) => (UNIFIED_EXAM_QUESTIONS[m] || []).map((p) => problemVariants[p.id] || p)
+  );
 
   const handleSubmit = () => {
     setIsTimerRunning(false);
@@ -386,66 +359,48 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ⚡ Bolt Performance Optimization:
-  // 💡 What: Memoized derived progress computations.
-  // 🎯 Why: Avoids iterating through all modules, guided steps, and problems on every timer tick.
-  // 📊 Impact: O(N) operations avoided every second, ensuring smooth UI during the live timer.
-  const { totalActionItems, completedActionItems, overallPct, problemsAnswered } = useMemo(() => {
-    const answeredCount = activeProblems.filter(
-      (p) => userAnswers[p.id] && userAnswers[p.id].trim() !== ''
-    ).length;
+  // Progress Calculations
+  const problemsAnswered = activeProblems.filter(
+    (p) => userAnswers[p.id] && userAnswers[p.id].trim() !== ''
+  ).length;
 
-    let guidedStepsTotal = 0;
-    let guidedStepsDone = 0;
-    selectedMods.forEach((m) => {
-      (GUIDED[m] || []).forEach((g) => {
-        guidedStepsTotal += g.steps.length;
-        const st = guidedState[g.id];
-        if (st) {
-          guidedStepsDone += st.stepResults.filter((r) => r && r.revealed).length;
-        }
-      });
+  let guidedStepsTotal = 0;
+  let guidedStepsDone = 0;
+  selectedMods.forEach((m) => {
+    (GUIDED[m] || []).forEach((g) => {
+      guidedStepsTotal += g.steps.length;
+      const st = guidedState[g.id];
+      if (st) {
+        guidedStepsDone += st.stepResults.filter((r) => r && r.revealed).length;
+      }
     });
+  });
 
-    const totalActions = guidedStepsTotal + activeProblems.length;
-    const completedActions = guidedStepsDone + answeredCount;
-    const pct = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+  const totalActionItems = guidedStepsTotal + activeProblems.length;
+  const completedActionItems = guidedStepsDone + problemsAnswered;
+  const overallPct =
+    totalActionItems > 0 ? Math.round((completedActionItems / totalActionItems) * 100) : 0;
 
-    return {
-      problemsAnswered: answeredCount,
-      totalActionItems: totalActions,
-      completedActionItems: completedActions,
-      overallPct: pct,
+  // Results Scores
+  let earnedPts = 0;
+  const maxPts = activeProblems.length * 2;
+  const modScores: Record<number, ModuleStats> = {};
+
+  selectedMods.forEach((m) => {
+    const modProbs = activeProblems.filter((p) => p.mod === m);
+    let modEarned = 0;
+    modProbs.forEach((p) => {
+      const res = practiceResults[p.id];
+      if (res) modEarned += res.points;
+    });
+    const modMax = modProbs.length * 2;
+    modScores[m] = {
+      earned: modEarned,
+      max: modMax,
+      pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
     };
-  }, [activeProblems, userAnswers, selectedMods, guidedState]);
-
-  // ⚡ Bolt Performance Optimization:
-  // 💡 What: Memoized results and scoring logic.
-  // 🎯 Why: Avoids recalculating totals for all active problems on every re-render.
-  // 📊 Impact: Reduces computational load during active learning and timer ticks.
-  const { earnedPts, maxPts, modScores } = useMemo(() => {
-    let earned = 0;
-    const max = activeProblems.length * 2;
-    const scores: Record<number, ModuleStats> = {};
-
-    selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
-        const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
-    });
-
-    return { earnedPts: earned, maxPts: max, modScores: scores };
-  }, [activeProblems, practiceResults, selectedMods]);
+    earnedPts += modEarned;
+  });
 
   const scrollToAnchor = (mod: ModuleId) => {
     setActiveTab(mod);
