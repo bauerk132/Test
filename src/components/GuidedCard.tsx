@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GuidedExample, GuidedProgress, MicroSkill } from '../types';
 import { FunctionVisualizer } from './FunctionVisualizer';
 import { MathKeypad } from './MathKeypad';
-import { Lightbulb, CheckCircle2, XCircle, ArrowRight, Sparkles, HelpCircle } from 'lucide-react';
+import { Lightbulb, CheckCircle2, XCircle, Sparkles, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface GuidedCardProps {
