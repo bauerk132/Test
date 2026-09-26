@@ -14,7 +14,7 @@ interface GuidedCardProps {
   onNextStep: (exampleId: string, stepIndex: number) => void;
 }
 
-export const GuidedCard: React.FC<GuidedCardProps> = ({
+export const GuidedCard: React.FC<GuidedCardProps> = React.memo(({
   example,
   index,
   microSkill,
@@ -333,4 +333,4 @@ export const GuidedCard: React.FC<GuidedCardProps> = ({
       )}
     </div>
   );
-};
+});
