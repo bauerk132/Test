@@ -14,6 +14,15 @@ import { FormulaModal } from './components/FormulaModal';
 import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
+import { GuidedExample } from './types';
+
+// Precompute a flat map of guided examples for O(1) lookups
+const guidedExampleMap = new Map<string, GuidedExample>();
+for (const modId in GUIDED) {
+  for (const g of GUIDED[modId as unknown as number] || []) {
+    guidedExampleMap.set(g.id, g);
+  }
+}
 
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
@@ -99,15 +108,8 @@ export default function App() {
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
-    if (!targetExample) return false;
+    const targetExample = guidedExampleMap.get(exampleId);
+    if (!targetExample || !selectedMods.includes(targetExample.mod)) return false;
 
     const step = targetExample.steps[stepIndex];
     const cleanUser = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -161,15 +163,8 @@ export default function App() {
   }, [selectedMods]);
 
   const handleNextStep = useCallback((exampleId: string, stepIndex: number) => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
-    if (!targetExample) return;
+    const targetExample = guidedExampleMap.get(exampleId);
+    if (!targetExample || !selectedMods.includes(targetExample.mod)) return;
 
     setGuidedState((prev) => {
       const cur = prev[exampleId];
