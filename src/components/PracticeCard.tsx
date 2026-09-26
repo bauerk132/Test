@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PracticeProblem, PracticeResult } from '../types';
 import { FunctionVisualizer } from './FunctionVisualizer';
 import { MathKeypad } from './MathKeypad';
-import { CheckCircle, AlertCircle, XCircle, Lightbulb, ChevronDown, ChevronUp, Edit2, RefreshCw, RotateCcw, Sparkles } from 'lucide-react';
+import { CheckCircle, AlertCircle, XCircle, Lightbulb, ChevronDown, ChevronUp, RefreshCw, RotateCcw, Sparkles } from 'lucide-react';
 
 interface PracticeCardProps {
   problem: PracticeProblem;
