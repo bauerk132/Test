@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ModuleId, ModuleStats, PracticeProblem, PracticeResult, GuidedProgress, GuidedExample } from '../types';
 import { MICRO_SKILLS } from '../data/microSkills';
-import { Trophy, Compass, BookOpen, RotateCcw, Eye, ArrowUpRight, Flame, CheckCircle2 } from 'lucide-react';
+import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ResultsViewProps {
