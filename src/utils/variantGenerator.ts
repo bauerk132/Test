@@ -6,13 +6,20 @@ import { PracticeProblem, ModuleId } from '../types';
  * exact mathematical solutions, updated keywords, hints, and step-by-step solutions.
  */
 
-// Helper to pick randomly from an array based on seed or Math.random
+// Cryptographically secure random number generator between 0 (inclusive) and 1 (exclusive)
+function getSecureRandom(): number {
+  const array = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(array);
+  return array[0] / (0xffffffff + 1);
+}
+
+// Helper to pick randomly from an array based on seed or secure random
 function pick<T>(arr: T[], seed?: number): T {
   if (seed !== undefined) {
     const idx = Math.abs(seed) % arr.length;
     return arr[idx];
   }
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(getSecureRandom() * arr.length)];
 }
 
 function randInt(min: number, max: number, seed?: number): number {
@@ -20,7 +27,7 @@ function randInt(min: number, max: number, seed?: number): number {
     const range = max - min + 1;
     return min + (Math.abs(seed) % range);
   }
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(getSecureRandom() * (max - min + 1)) + min;
 }
 
 export function generateProblemVariant(base: PracticeProblem, variantNum: number): PracticeProblem {
