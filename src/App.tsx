@@ -15,6 +15,12 @@ import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, Refresh
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 
+const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
+  const next = { ...prev };
+  delete next[key];
+  return next;
+};
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -215,40 +221,16 @@ export default function App() {
     setProblemVariants((prev) => ({ ...prev, [problemId]: newVariant }));
 
     // Reset user answers and work for this card so the student can work fresh
-    setUserAnswers((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserWork((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
+    setUserAnswers(omitKey(problemId));
+    setUserWork(omitKey(problemId));
   }, [selectedMods, variantCounters]);
 
   // Reset a problem back to the original baseline numbers
   const handleResetVariant = useCallback((problemId: string) => {
-    setProblemVariants((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setVariantCounters((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserAnswers((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserWork((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
+    setProblemVariants(omitKey(problemId));
+    setVariantCounters(omitKey(problemId));
+    setUserAnswers(omitKey(problemId));
+    setUserWork(omitKey(problemId));
   }, []);
 
   // Bulk shuffle all problems in a module with new algorithmic variants
