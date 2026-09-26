@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ModuleId, GuidedProgress, PracticeResult, ModuleStats, PracticeProblem } from './types';
 import { MICRO_SKILLS } from './data/microSkills';
 import { GUIDED } from './data/guidedData';
-import { UNIFIED_EXAM_QUESTIONS } from './data/unifiedExamData';
+import { UNIFIED_EXAM_QUESTIONS, UNIFIED_EXAM_QUESTIONS_MAP } from './data/unifiedExamData';
 import { Header } from './components/Header';
 import { ModuleSelector } from './components/ModuleSelector';
 import { GuidedCard } from './components/GuidedCard';
@@ -197,14 +197,7 @@ export default function App() {
 
   // Generate a single problem variant with randomized numbers
   const handleGenerateVariant = useCallback((problemId: string) => {
-    let baseProblem: PracticeProblem | null = null;
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === problemId);
-      if (p) {
-        baseProblem = p;
-        break;
-      }
-    }
+    const baseProblem = UNIFIED_EXAM_QUESTIONS_MAP[problemId] || null;
     if (!baseProblem) return;
 
     const currentCount = variantCounters[problemId] || 1;
@@ -277,11 +270,7 @@ export default function App() {
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
     if (problemVariants[qId]) return problemVariants[qId];
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === qId);
-      if (p) return p;
-    }
-    return null;
+    return UNIFIED_EXAM_QUESTIONS_MAP[qId] || null;
   };
 
   // Grade Practice / Test Problem

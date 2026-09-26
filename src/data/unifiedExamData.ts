@@ -228,3 +228,15 @@ export const UNIFIED_EXAM_QUESTIONS: Record<ModuleId, PracticeProblem[]> = {
   8: [...(ORIGINAL_TEST_V2[8] || []), ...(QB3_EXTRA[8] || [])],
   9: [...(ORIGINAL_TEST_V2[9] || []), ...(QB3_EXTRA[9] || [])],
 };
+
+/**
+ * Pre-computed O(1) lookup map for all unified exam questions.
+ * Eliminates O(N) traversal bottlenecks during variant generation and grading.
+ */
+export const UNIFIED_EXAM_QUESTIONS_MAP: Record<string, PracticeProblem> = {};
+for (const modId in UNIFIED_EXAM_QUESTIONS) {
+  const problems = UNIFIED_EXAM_QUESTIONS[Number(modId) as ModuleId] || [];
+  for (const p of problems) {
+    UNIFIED_EXAM_QUESTIONS_MAP[p.id] = p;
+  }
+}
