@@ -1,4 +1,4 @@
-import { PracticeProblem, ModuleId } from '../types';
+import { PracticeProblem } from '../types';
 
 /**
  * Algorithmic Problem Variant Generator for Precalculus
