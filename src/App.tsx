@@ -11,9 +11,24 @@ import { ResultsView } from './components/ResultsView';
 import { InteractiveSandboxModal } from './components/InteractiveSandboxModal';
 import { GitHubExportModal } from './components/GitHubExportModal';
 import { FormulaModal } from './components/FormulaModal';
-import { Compass, Edit3, CheckCircle, Award, BookOpen, Layers, Sparkles, RefreshCw } from 'lucide-react';
+import { Compass, CheckCircle, Award, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
+import { GuidedExample } from './types';
+
+// Precompute a flat map of guided examples for O(1) lookups
+const guidedExampleMap = new Map<string, GuidedExample>();
+for (const modId in GUIDED) {
+  for (const g of GUIDED[modId as unknown as number] || []) {
+    guidedExampleMap.set(g.id, g);
+  }
+}
+
+const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
+  const next = { ...prev };
+  delete next[key];
+  return next;
+};
 
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
@@ -65,16 +80,8 @@ export default function App() {
     );
   };
 
-  const handleSelectAll = () => {
-    setSelectedMods([5, 6, 7, 8, 9]);
-  };
-
-  const handleSelectTest2Only = () => {
-    setSelectedMods([7, 8, 9]);
-  };
-
-  const handleSelectAlgebraOnly = () => {
-    setSelectedMods([5, 6]);
+  const handleSelectPreset = (mods: ModuleId[]) => {
+    setSelectedMods(mods);
   };
 
   const handleStart = () => {
@@ -99,15 +106,8 @@ export default function App() {
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
-    if (!targetExample) return false;
+    const targetExample = guidedExampleMap.get(exampleId);
+    if (!targetExample || !selectedMods.includes(targetExample.mod)) return false;
 
     const step = targetExample.steps[stepIndex];
     const cleanUser = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -161,15 +161,8 @@ export default function App() {
   }, [selectedMods]);
 
   const handleNextStep = useCallback((exampleId: string, stepIndex: number) => {
-    let targetExample = null;
-    for (const m of selectedMods) {
-      const found = (GUIDED[m] || []).find((g) => g.id === exampleId);
-      if (found) {
-        targetExample = found;
-        break;
-      }
-    }
-    if (!targetExample) return;
+    const targetExample = guidedExampleMap.get(exampleId);
+    if (!targetExample || !selectedMods.includes(targetExample.mod)) return;
 
     setGuidedState((prev) => {
       const cur = prev[exampleId];
@@ -215,40 +208,16 @@ export default function App() {
     setProblemVariants((prev) => ({ ...prev, [problemId]: newVariant }));
 
     // Reset user answers and work for this card so the student can work fresh
-    setUserAnswers((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserWork((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
+    setUserAnswers(omitKey(problemId));
+    setUserWork(omitKey(problemId));
   }, [selectedMods, variantCounters]);
 
   // Reset a problem back to the original baseline numbers
   const handleResetVariant = useCallback((problemId: string) => {
-    setProblemVariants((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setVariantCounters((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserAnswers((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
-    setUserWork((prev) => {
-      const next = { ...prev };
-      delete next[problemId];
-      return next;
-    });
+    setProblemVariants(omitKey(problemId));
+    setVariantCounters(omitKey(problemId));
+    setUserAnswers(omitKey(problemId));
+    setUserWork(omitKey(problemId));
   }, []);
 
   // Bulk shuffle all problems in a module with new algorithmic variants
@@ -297,8 +266,12 @@ export default function App() {
     const workClean = (work || '').toLowerCase();
 
     // 1. Direct keyword match -> full credit (2 pts)
-    const isFullCredit = problem.kw.some((kw) =>
-      ansClean.includes(kw.toLowerCase().replace(/\s/g, ''))
+    if (!problem.kwClean) {
+      problem.kwClean = problem.kw.map((kw) => kw.toLowerCase().replace(/\s/g, ''));
+    }
+
+    const isFullCredit = problem.kwClean.some((kwClean) =>
+      ansClean.includes(kwClean)
     );
     if (isFullCredit) return { points: 2, status: 'correct' };
 
@@ -486,9 +459,7 @@ export default function App() {
           <ModuleSelector
             selectedMods={selectedMods}
             onToggleMod={toggleMod}
-            onSelectAll={handleSelectAll}
-            onSelectTest2Only={handleSelectTest2Only}
-            onSelectAlgebraOnly={handleSelectAlgebraOnly}
+            onSelectPreset={handleSelectPreset}
             onStart={handleStart}
           />
         )}
