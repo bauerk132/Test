@@ -7,3 +7,6 @@
 ## 2024-09-26 - Optimized Guided Example Lookup
 **Learning:** O(N) array traversals inside callback functions like `handleCheckStep` and `handleNextStep` (which can be called frequently) can be heavily optimized by precomputing a flat map for O(1) lookups.
 **Action:** When working with nested structured static data (like dictionaries grouped by module ID), flatten it into a module-scoped `Map` if frequent O(1) retrieval by ID is needed. Ensure `import` statements stay at the top of the file before any logic.
+## 2024-10-24 - [Modal and Header React.memo Optimization]
+**Learning:** High-level UI elements (like Header and Modals) were re-rendering unnecessarily due to App state updates, specifically when timer triggers render every second. The modals themselves were not memoized.
+**Action:** When working with modal components or heavy high-level components that receive callbacks, ensure they are wrapped in `React.memo` and the callbacks passed are stabilized with `useCallback` to prevent cascading renders.

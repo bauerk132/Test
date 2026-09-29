@@ -6,7 +6,7 @@ interface InteractiveSandboxModalProps {
   onClose: () => void;
 }
 
-export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = ({
+export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -308,4 +308,4 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
       </div>
     </div>
   );
-};
+});
