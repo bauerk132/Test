@@ -6,7 +6,7 @@ This shows both turns: the question, then the plan. The room is made up.
 
 > I see a dorm desk corner: clothes, a gym bag, and papers on the floor, and a crowded desk top.
 >
-> **How long do you want to spend cleaning?** 15 minutes · 30 minutes · 1 hour · 2+ hours
+> **How long do you want to spend cleaning?** 10 minutes or less · 30 minutes · 1 hour · 2+ hours
 
 The user answers **30 minutes**.
 

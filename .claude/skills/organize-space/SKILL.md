@@ -26,7 +26,7 @@ Build an inventory for yourself, grouped by location: floor, furniture tops, und
 
 Unless the user already gave a time, ask: **"How long do you want to spend cleaning?"** The answer decides how big the plan is, so write no plan until you have it.
 
-- If you have the AskUserQuestion tool, use it with these options: **15 minutes** (quick rescue), **30 minutes**, **1 hour**, **2+ hours** (full reset). The user can also type their own number.
+- If you have the AskUserQuestion tool, use it with these options: **10 minutes or less** (quick rescue), **30 minutes**, **1 hour**, **2+ hours** (full reset). The user can also type their own number, such as 15 minutes. The tool allows at most four options, which is why 15 minutes isn't a button.
 - Otherwise ask in chat, list the same four choices, and **end your turn**. Don't write the plan in the same message.
 - In the same question you may ask **one** more thing, but only if the answer would change the plan (what the room is for, or whether the space is shared). Skip it if the photos make it obvious.
 - Before asking, say in one line what you see ("A bedroom corner with clothes and school supplies on the floor"), so the user knows you read the photos.
@@ -89,6 +89,7 @@ Always use this order. Earlier steps give the most improvement per minute:
 
 | Budget | Steps to include |
 |---|---|
+| 10 min or less | 1 and 3, then everything else off the floor onto one surface or into one bag, throwing out obvious trash as you go. Put things that already belong together (like school supplies and a backpack) together. No sorting. |
 | 15 min | 1-3, then put the remaining floor items in one basket to sort later |
 | 30 min | 1-5 |
 | 1 hour | 1-7 |
