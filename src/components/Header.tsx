@@ -2,7 +2,7 @@ import React from 'react';
 import { Timer, Github, Sliders, BookOpen, Layers } from 'lucide-react';
 
 interface HeaderProps {
-  seconds: number;
+  timerResetKey: number;
   isTimerRunning: boolean;
   onToggleTimer: () => void;
   onOpenSandbox: () => void;
@@ -11,18 +11,45 @@ interface HeaderProps {
   onNavigateHome?: () => void;
 }
 
+
+// ⚡ Bolt Optimization: Extracted timer state into isolated component.
+// Why: Ensures the 1-second ticks only re-render the timer display instead of the App root.
+const LiveTimer: React.FC<{ isTimerRunning: boolean; timerResetKey: number }> = React.memo(({ isTimerRunning, timerResetKey }) => {
+  const [seconds, setSeconds] = React.useState(0);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    setSeconds(0);
+  }, [timerResetKey]);
+
+  React.useEffect(() => {
+    if (isTimerRunning) {
+      timerRef.current = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isTimerRunning]);
+
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return <>{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</>;
+});
+
+
 export const Header: React.FC<HeaderProps> = ({
-  seconds,
+  timerResetKey,
+  isTimerRunning,
+  onToggleTimer,
   onOpenSandbox,
   onOpenGithub,
   onOpenFormulas,
   onNavigateHome,
 }) => {
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/90 bg-[#090b10]/95 backdrop-blur-md shadow-lg shadow-black/20">
@@ -58,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Live Timer */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono font-bold text-amber-300 shadow-inner">
             <Timer className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span>{formatTime(seconds)}</span>
+            <span><LiveTimer isTimerRunning={isTimerRunning} timerResetKey={timerResetKey} /></span>
           </div>
 
           {/* Formulas button */}

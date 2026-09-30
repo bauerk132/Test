@@ -7,3 +7,6 @@
 ## 2024-09-26 - Optimized Guided Example Lookup
 **Learning:** O(N) array traversals inside callback functions like `handleCheckStep` and `handleNextStep` (which can be called frequently) can be heavily optimized by precomputing a flat map for O(1) lookups.
 **Action:** When working with nested structured static data (like dictionaries grouped by module ID), flatten it into a module-scoped `Map` if frequent O(1) retrieval by ID is needed. Ensure `import` statements stay at the top of the file before any logic.
+## 2024-05-15 - [React Top-Level Timer Anti-Pattern]
+**Learning:** Found a severe performance bottleneck where a global `seconds` timer updating every 1000ms in the top-level `App.tsx` component triggered cascading re-renders across all deeply nested child components. Additionally, inline literal prop values (e.g. `{...}`) broke `React.memo` entirely for `GuidedCard` when fallback state was used.
+**Action:** Always extract continuously ticking timer states into an isolated component (e.g. `LiveTimer`) to prevent root re-renders. Always verify if fallback object props in parent components are breaking `React.memo`, and extract them to module-scoped constants if necessary.
