@@ -1,0 +1,9 @@
+{"day":"2026-10-06","fluid":true,"items":[
+{"sec":"Morning"},
+{"id":"wake","dur":30,"t":"Shower + breakfast","cat":"self","d":""},
+{"id":"study1","dur":60,"t":"Precalc: practice set","cat":"precalc","d":"Five problems, check answers after."},
+{"id":"walk1","dur":15,"t":"Walk outside, no phone","cat":"walk","d":"15 minutes."},
+{"id":"appt","dur":45,"at":660,"t":"Sample appointment","cat":"calls","fixed":true,"d":"A real clock-time item."},
+{"id":"job1","dur":60,"t":"Job applications, block 1","cat":"job","d":"Aim for 2. Log each one."},
+{"id":"free","dur":90,"t":"Free time","cat":"free","d":""}
+]}

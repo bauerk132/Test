@@ -1,0 +1,957 @@
+<title>Run Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #f6efe4;
+    --card: #ffffff;
+    --ink: #1c140d;
+    --ink-soft: #4a3b2e;
+    --rule: #8a7663;
+    --route: #0b4f8a;
+    --route-soft: #dbe8f5;
+    --late: #9a3f00;
+    --late-soft: #fde3cc;
+    --done: #1f6b3a;
+    --done-soft: #d9efe0;
+    --skip: #5f5953;
+    --skip-soft: #ebe5de;
+    --fixed: #a1150c;
+    --focus: #c2410c;
+    --c-study: #0b4f8a;
+    --c-job: #c2410c;
+    --c-move: #1f6b3a;
+    --c-errand: #7a4a1e;
+    --c-rest: #8a7663;
+    --accent: #b84a0a;
+    --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #14100c;
+      --card: #1f1812;
+      --ink: #fbf3e8;
+      --ink-soft: #d8c6b2;
+      --rule: #8c7864;
+      --route: #6cb6ff;
+      --route-soft: #102a45;
+      --late: #ff9a3d;
+      --late-soft: #3d2410;
+      --done: #6ee39a;
+      --done-soft: #12301d;
+      --skip: #a59c93;
+      --skip-soft: #2a231d;
+      --fixed: #ff7f73;
+      --focus: #ff9a3d;
+      --c-study: #6cb6ff;
+      --c-job: #ff9a3d;
+      --c-move: #6ee39a;
+      --c-errand: #d9a066;
+      --c-rest: #a59c93;
+      --accent: #ff9a3d;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #14100c;
+    --card: #1f1812;
+    --ink: #fbf3e8;
+    --ink-soft: #d8c6b2;
+    --rule: #8c7864;
+    --route: #6cb6ff;
+    --route-soft: #102a45;
+    --late: #ff9a3d;
+    --late-soft: #3d2410;
+    --done: #6ee39a;
+    --done-soft: #12301d;
+    --skip: #a59c93;
+    --skip-soft: #2a231d;
+    --fixed: #ff7f73;
+    --focus: #ff9a3d;
+    --c-study: #6cb6ff;
+    --c-job: #ff9a3d;
+    --c-move: #6ee39a;
+    --c-errand: #d9a066;
+    --c-rest: #a59c93;
+    --accent: #ff9a3d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.45;
+    padding-inline: 16px;
+    padding-block: 0 48px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+
+  .board {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--paper);
+    padding-block: 14px 12px;
+    border-bottom: 3px solid var(--accent);
+    display: grid;
+    gap: 10px;
+  }
+  .board-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1, h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 { font-size: 30px; }
+  h2 { font-size: 22px; }
+  .clock { font-family: var(--mono); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .readout {
+    background: var(--card);
+    border: 2px solid var(--rule);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .label {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .readout .value { font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.1; }
+  .readout .sub { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+  .readout.is-late { border-color: var(--late); background: var(--late-soft); }
+  .readout.is-late .value { color: var(--late); }
+  .readout.is-ok .value { color: var(--done); }
+  .tally { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; color: var(--ink-soft); }
+  .tally b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sync { font-size: 12px; color: var(--ink-soft); }
+
+  .route { list-style: none; margin: 18px 0 0; padding: 0; position: relative; }
+  .route::before {
+    content: "";
+    position: absolute;
+    left: 58px;
+    top: 8px;
+    bottom: 8px;
+    width: 4px;
+    background: var(--route);
+    border-radius: 2px;
+  }
+  .route:empty::before { display: none; }
+  .section {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 14px 0 6px 80px;
+    position: relative;
+  }
+  .stop {
+    display: grid;
+    grid-template-columns: 50px 20px 1fr;
+    column-gap: 10px;
+    padding-block: 8px;
+    position: relative;
+  }
+  .time {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 14px;
+    text-align: right;
+    padding-top: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .dot {
+    width: 18px;
+    height: 18px;
+    margin-top: 12px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 4px solid var(--route);
+    position: relative;
+    z-index: 1;
+  }
+  .stop.fixed .dot { border-radius: 3px; border-color: var(--fixed); }
+  .stop.st-done .dot { background: var(--done); border-color: var(--done); }
+  .stop.st-skipped .dot { background: var(--skip); border-color: var(--skip); }
+  .stop.st-started .dot { background: var(--route); }
+
+  .card {
+    background: var(--card);
+    border: 2px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 12px 12px;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+  .stop.is-now .card { border: 2px solid var(--route); box-shadow: 0 0 0 4px var(--route-soft); }
+  .stop.is-now .time { color: var(--route); }
+  .stop.st-done .card { background: var(--done-soft); border-color: transparent; }
+  .stop.st-skipped .card { background: var(--skip-soft); border-color: transparent; }
+  .stop.st-skipped .title { text-decoration: line-through; color: var(--ink-soft); }
+
+  .head { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .title { font-weight: 600; font-size: 17px; line-height: 1.25; }
+  .meta { font-size: 14px; color: var(--ink-soft); }
+  .mono { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 2px solid var(--rule);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .tag.fixed { border-color: var(--fixed); color: var(--fixed); }
+  .tag.now { border-color: var(--route); color: var(--route); }
+  .tag.late { border-color: var(--late); color: var(--late); background: var(--late-soft); }
+  .tag.ok { border-color: var(--done); color: var(--done); }
+
+  .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .actions button { font-size: clamp(12px, 3.3vw, 15px); letter-spacing: 0; padding-inline: 2px; white-space: nowrap; }
+  button {
+    font: inherit;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    min-height: 52px;
+    padding: 6px 4px;
+    border-radius: 6px;
+    border: 2px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button[aria-pressed="true"].b-start { background: var(--route); border-color: var(--route); color: var(--card); }
+  button[aria-pressed="true"].b-done { background: var(--done); border-color: var(--done); color: var(--card); }
+  button[aria-pressed="true"].b-skip { background: var(--skip); border-color: var(--skip); color: var(--card); }
+  .note {
+    font: inherit;
+    font-size: 15px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .note::placeholder { color: var(--ink-soft); }
+  .legend { margin-top: 22px; font-size: 14px; color: var(--ink-soft); display: grid; gap: 4px; padding-left: 80px; }
+  .legend .sq { display: inline-block; width: 12px; height: 12px; border: 3px solid var(--fixed); border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+  .legend .ci { display: inline-block; width: 12px; height: 12px; border: 3px solid var(--route); border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+  .empty { margin-top: 18px; padding: 14px; border: 2px dashed var(--rule); border-radius: 8px; color: var(--ink-soft); }
+
+  /* Averages: the timetable's "typical running times" panel */
+  .avg { margin-top: 36px; display: grid; gap: 10px; }
+  .avg p { margin: 0; color: var(--ink-soft); font-size: 14px; max-width: 60ch; }
+  .tbl-wrap { overflow-x: auto; border: 2px solid var(--rule); border-radius: 8px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 14px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--mono); font-size: 13px; }
+  td.over { color: var(--late); font-weight: 600; }
+  td.under { color: var(--done); font-weight: 600; }
+
+  @media (max-width: 420px) {
+    .route::before { left: 52px; }
+    .stop { grid-template-columns: 44px 20px 1fr; column-gap: 8px; }
+    .section, .legend { padding-left: 72px; }
+    .readouts { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: background-color .2s, border-color .2s; }
+  }
+  .section { color: var(--accent); }
+
+  /* Category stripe on each card (after the st-done/st-skipped rules so it survives them) */
+  .stop[data-group] .card { border-left-width: 8px; }
+  .stop[data-group="study"] .card, .key [data-group="study"]::before { border-left-color: var(--c-study); background-color: var(--c-study); }
+  .stop[data-group="job"] .card, .key [data-group="job"]::before { border-left-color: var(--c-job); background-color: var(--c-job); }
+  .stop[data-group="move"] .card, .key [data-group="move"]::before { border-left-color: var(--c-move); background-color: var(--c-move); }
+  .stop[data-group="errand"] .card, .key [data-group="errand"]::before { border-left-color: var(--c-errand); background-color: var(--c-errand); }
+  .stop[data-group="rest"] .card, .key [data-group="rest"]::before { border-left-color: var(--c-rest); background-color: var(--c-rest); }
+  .stop[data-group] .card { background-color: var(--card); }
+  .stop.st-done[data-group] .card { background-color: var(--done-soft); }
+  .stop.st-skipped[data-group] .card { background-color: var(--skip-soft); }
+
+  /* Day progress bar: done (green) then skipped (grey) */
+  .progress { display: flex; height: 14px; margin-top: 10px; border: 2px solid var(--rule); border-radius: 4px; background: var(--skip-soft); overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 0; transition: width 0.4s ease; }
+  .pg-done { background: var(--done); }
+  .pg-skip { background: var(--skip); }
+  @media (prefers-reduced-motion: reduce) { .progress span { transition: none; } }
+
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .key span::before { content: ""; width: 12px; height: 12px; border-radius: 2px; }
+</style>
+
+<div class="wrap">
+  <header class="board" aria-live="polite">
+    <div class="board-top">
+      <h1 id="day-title">Run Sheet</h1>
+      <span class="clock" id="clock">--:--</span>
+    </div>
+    <div class="readouts">
+      <div class="readout" id="drift-box">
+        <span class="label">Running</span>
+        <span class="value" id="drift">Not started</span>
+        <span class="sub" id="drift-sub">Tap Started when you begin a block</span>
+      </div>
+      <div class="readout">
+        <span class="label" id="anchor-label">Next fixed time</span>
+        <span class="value" id="anchor">--</span>
+        <span class="sub" id="anchor-sub"></span>
+      </div>
+    </div>
+    <div class="tally">
+      <span>Done <b id="t-done">0</b></span>
+      <span>Skipped <b id="t-skip">0</b></span>
+      <span>Left <b id="t-left">0</b></span>
+      <span class="sync" id="sync">Saving on this device</span>
+    </div>
+    <div class="progress" id="progress" role="progressbar" aria-label="Day progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="pg-done" id="pg-done"></span><span class="pg-skip" id="pg-skip"></span>
+    </div>
+    <div class="key" aria-label="Category colors">
+      <span data-group="study">Study</span><span data-group="job">Jobs</span><span data-group="move">Walks</span><span data-group="errand">Errands</span><span data-group="rest">Rest</span>
+    </div>
+  </header>
+
+  <ol class="route" id="route"></ol>
+  <div class="empty" id="no-plan" hidden>No plan for today yet. Ask Claude to build today's run sheet and it will show up here.</div>
+
+  <div class="legend" id="legend">
+    <span id="leg1"><span class="sq"></span>Fixed time: can't slide, plan around it</span>
+    <span id="leg2"><span class="ci"></span>Flexible block: can move if you run late</span>
+  </div>
+
+  <section class="avg" aria-labelledby="avg-h">
+    <h2 id="avg-h">Your real running times</h2>
+    <p id="avg-note">Built from every day you log here. Tap Started and Done on a block to record how long it really took. Claude uses these numbers to plan your next days.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Kind of block</th><th scope="col">Logged</th><th scope="col">Planned</th><th scope="col">Actually took</th><th scope="col">Start drift</th></tr>
+        </thead>
+        <tbody id="avg-body"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var TZ = "America/New_York";
+
+  var CATS = {
+    chores: "Packing & chores",
+    calls: "Calls & errands",
+    walk: "Walks",
+    self: "Shower & meals",
+    precalc: "Precalc",
+    comptia: "CompTIA A+",
+    coursera: "Coursera",
+    transit: "Bus & travel",
+    job: "Job search",
+    free: "Free time"
+  };
+
+  // Offline fallback for the first day; the live plan comes from db plans/<date>.
+  var FALLBACK = {};
+
+  var DAY = todayKey();
+  var plan = FALLBACK[DAY] || [];
+  var blocks = [];
+  var fluid = false;       // fluid plans have durations, not clock times
+  var state = {};          // today's { blockId: {status, startedAt, doneAt, note, t, cat, s, e} }
+  var history = {};        // all days: { "YYYY-MM-DD": blocks }
+  var docRef = null;
+  var writeChain = Promise.resolve();
+  var pendingRender = false;
+
+  function todayKey() {
+    try {
+      return new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    } catch (e) {
+      var d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+  }
+  function weekday() {
+    try { return new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "long" }).format(new Date()); }
+    catch (e) { return ""; }
+  }
+  function nowMin() {
+    try {
+      var parts = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+      var h = 0, m = 0;
+      parts.forEach(function (p) { if (p.type === "hour") h = +p.value; if (p.type === "minute") m = +p.value; });
+      return h * 60 + m;
+    } catch (e) {
+      var d = new Date();
+      return d.getHours() * 60 + d.getMinutes();
+    }
+  }
+  function fmt(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    var ap = h >= 12 ? "pm" : "am";
+    var h12 = h % 12 === 0 ? 12 : h % 12;
+    return h12 + ":" + (m < 10 ? "0" : "") + m + ap;
+  }
+  function fmtShort(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    var h12 = h % 12 === 0 ? 12 : h % 12;
+    return h12 + ":" + (m < 10 ? "0" : "") + m;
+  }
+  function dur(mins) {
+    mins = Math.round(Math.abs(mins));
+    if (mins < 60) return mins + " min";
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return h + " hr" + (m ? " " + m + " min" : "");
+  }
+  function signed(mins) {
+    mins = Math.round(mins);
+    if (Math.abs(mins) <= 2) return "on time";
+    return (mins > 0 ? "+" : "−") + dur(mins);
+  }
+  function entry(id) { return state[id] || {}; }
+  function planDur(b) { return typeof b.dur === "number" ? b.dur : (b.e - b.s); }
+
+  // Fluid plans: nothing has a clock time until you tap Started. Each block's
+  // estimate chains off when the previous block really finished. Blocks with
+  // an "at" time (appointments) can't start earlier than that.
+  function project(t) {
+    var by = {}, cur = null, first = true, dayStart = null, planned = 0, waits = 0;
+    blocks.forEach(function (b) {
+      var e = entry(b.id), d = planDur(b);
+      if (e.status === "skipped") { by[b.id] = { s: null, e: null }; return; }
+      planned += d;
+      if (typeof e.doneAt === "number") {
+        var s0 = typeof e.startedAt === "number" ? e.startedAt : e.doneAt;
+        if (dayStart === null) dayStart = s0;
+        by[b.id] = { s: s0, e: e.doneAt, actual: true };
+        cur = e.doneAt;
+      } else if (typeof e.startedAt === "number") {
+        if (dayStart === null) dayStart = e.startedAt;
+        var end = Math.max(e.startedAt + d, t);
+        by[b.id] = { s: e.startedAt, e: end, running: true };
+        cur = end;
+        first = false;
+      } else if (cur !== null) {
+        var cand = first ? Math.max(cur, t) : cur;
+        var s1 = cand;
+        if (typeof b.at === "number" && b.at > cand) { waits += b.at - cand; s1 = b.at; }
+        first = false;
+        by[b.id] = { s: s1, e: s1 + d };
+        cur = s1 + d;
+      } else {
+        by[b.id] = { s: null, e: null };
+      }
+    });
+    var slip = (dayStart !== null && cur !== null) ? cur - (dayStart + planned + waits) : null;
+    return { by: by, dayStart: dayStart, finish: cur, slip: slip };
+  }
+  function slotStart(b, t) {
+    var p = project(0).by[b.id];
+    return p && typeof p.s === "number" ? p.s : t;
+  }
+  function stamp(e, b, t, force) {
+    e.t = b.t; e.cat = b.cat || "other";
+    if (!fluid) { e.s = b.s; e.e = b.e; return; }
+    if (force || typeof e.s !== "number") {
+      var s0 = slotStart(b, t);
+      e.s = s0; e.e = s0 + planDur(b);
+    }
+  }
+  function rangeText(b, pr) {
+    if (!fluid) return fmt(b.s) + "–" + fmt(b.e);
+    var d = dur(planDur(b));
+    if (pr && typeof pr.s === "number") {
+      return (pr.actual ? "" : "≈") + fmt(pr.s) + "–" + fmt(pr.e) + " · " + d;
+    }
+    return (typeof b.at === "number" ? "at " + fmt(b.at) + " · " : "") + d;
+  }
+  function setPlan(items, isFluid) {
+    fluid = !!isFluid;
+    plan = Array.isArray(items) ? items : [];
+    blocks = plan.filter(function (p) { return p && p.id; });
+  }
+  setPlan(plan);
+
+  // ---------- persistence ----------
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem("run-" + DAY);
+      if (raw) state = JSON.parse(raw) || {};
+    } catch (e) { /* storage unavailable: keep in memory */ }
+    history[DAY] = state;
+  }
+  function saveLocal() {
+    try { localStorage.setItem("run-" + DAY, JSON.stringify(state)); } catch (e) {}
+  }
+  function save() {
+    history[DAY] = state;
+    saveLocal();
+    if (!docRef) return;
+    var body = { day: DAY, blocks: JSON.parse(JSON.stringify(state)), updatedAt: new Date().toISOString() };
+    writeChain = writeChain.then(function () {
+      setSync("Saving…");
+      return docRef.set(body).then(function () {
+        setSync("Saved · Claude can see this");
+      }, function (err) {
+        setSync(err && err.code === "invalid_argument" ? "Read-only for you" : "Couldn't save online. Kept on this device");
+      });
+    });
+  }
+  function setSync(t) { document.getElementById("sync").textContent = t; }
+
+  // ---------- actions ----------
+  function setStatus(b, status) {
+    var e = Object.assign({}, entry(b.id));
+    var t = nowMin();
+    // Keep what was planned alongside what happened, so history stands on its own.
+    stamp(e, b, t, status === "started");
+    if (e.status === status) {
+      if (status === "started") delete e.startedAt;
+      if (status === "done") delete e.doneAt;
+      if (e.startedAt != null && status !== "started") e.status = "started"; else delete e.status;
+    } else {
+      e.status = status;
+      if (status === "started") { e.startedAt = t; delete e.doneAt; }
+      if (status === "done") e.doneAt = t;
+      if (status === "skipped") delete e.doneAt;
+    }
+    state[b.id] = e;
+    save();
+    render();
+  }
+  function setNote(b, text) {
+    var e = Object.assign({}, entry(b.id));
+    var clean = text.trim();
+    if ((e.note || "") === clean) return;
+    if (clean) e.note = clean; else delete e.note;
+    stamp(e, b, nowMin(), false);
+    state[b.id] = e;
+    save();
+    renderAverages();
+  }
+
+  // ---------- derived ----------
+  function currentDrift() {
+    for (var i = blocks.length - 1; i >= 0; i--) {
+      var b = blocks[i], e = entry(b.id);
+      if (typeof e.startedAt === "number") return { block: b, drift: e.startedAt - b.s };
+    }
+    return null;
+  }
+
+  // ---------- render ----------
+  function render() {
+    var active = document.activeElement;
+    if (active && active.classList && active.classList.contains("note")) { pendingRender = true; return; }
+    pendingRender = false;
+    var wd = weekday();
+    document.getElementById("day-title").textContent = (wd ? wd + " " : "") + "Run Sheet";
+    var ol = document.getElementById("route");
+    ol.textContent = "";
+    document.getElementById("no-plan").hidden = blocks.length > 0;
+    document.getElementById("legend").hidden = blocks.length === 0;
+    setLegend(document.getElementById("leg1"), "sq", fluid ? "Key block: a test or appointment. Don't rush it; everything after it slides." : "Fixed time: can't slide, plan around it");
+    setLegend(document.getElementById("leg2"), "ci", fluid ? "Times are estimates. Nothing starts until you tap Started, and later blocks shift to match." : "Flexible block: can move if you run late");
+    plan.forEach(function (p) {
+      if (p.sec) {
+        var li = document.createElement("li");
+        li.className = "section";
+        li.textContent = p.sec;
+        ol.appendChild(li);
+        return;
+      }
+      if (p.id) ol.appendChild(stopEl(p));
+    });
+    updateLive();
+    renderAverages();
+  }
+
+  function setLegend(el, cls, text) {
+    el.textContent = "";
+    var i = document.createElement("span");
+    i.className = cls;
+    el.appendChild(i);
+    el.appendChild(document.createTextNode(text));
+  }
+
+  // Category -> color group for the card stripe. Unknown categories fall back to "rest".
+  var CAT_GROUP = { precalc: "study", coursera: "study", comptia: "study", job: "job", walk: "move",
+    calls: "errand", chores: "errand", transit: "errand", self: "rest", sleep: "rest", free: "rest" };
+
+  function stopEl(b) {
+    var pr = fluid ? project(nowMin()).by[b.id] : null;
+    var e = entry(b.id);
+    var li = document.createElement("li");
+    li.className = "stop" + (b.fixed ? " fixed" : "") + (e.status ? " st-" + e.status : "");
+    li.dataset.id = b.id;
+    li.dataset.group = CAT_GROUP[b.cat] || "rest";
+
+    var time = document.createElement("div");
+    time.className = "time";
+    time.textContent = fluid ? (pr && typeof pr.s === "number" ? fmtShort(pr.s) : "·") : fmtShort(b.s);
+    var dot = document.createElement("div");
+    dot.className = "dot";
+    dot.setAttribute("aria-hidden", "true");
+
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var head = document.createElement("div");
+    head.className = "head";
+    var title = document.createElement("div");
+    title.className = "title";
+    title.textContent = b.t;
+    var tags = document.createElement("div");
+    tags.className = "tags";
+    if (b.fixed) tags.appendChild(tag(fluid ? (b.tagText || "Key") : "Fixed", "fixed"));
+    if (typeof e.startedAt === "number") {
+      if (fluid) {
+        var g = e.startedAt - (typeof e.s === "number" ? e.s : e.startedAt);
+        if (g > 2) tags.appendChild(tag("+" + dur(g) + " gap", "late"));
+      } else {
+        var d = e.startedAt - b.s;
+        if (d > 2) tags.appendChild(tag("+" + dur(d) + " late", "late"));
+        else if (d < -2) tags.appendChild(tag(dur(d) + " early", "ok"));
+        else tags.appendChild(tag("On time", "ok"));
+      }
+    } else if (fluid && typeof b.at === "number" && pr && typeof pr.s === "number" && pr.s - b.at > 2) {
+      tags.appendChild(tag(dur(pr.s - b.at) + " past its time", "late"));
+    }
+    var nowTag = tag("Now", "now");
+    nowTag.dataset.role = "now";
+    nowTag.hidden = true;
+    tags.appendChild(nowTag);
+    head.appendChild(title);
+    head.appendChild(tags);
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var span = document.createElement("span");
+    span.className = "mono";
+    span.dataset.role = "range";
+    span.textContent = rangeText(b, pr);
+    meta.appendChild(span);
+    if (b.d) meta.appendChild(document.createTextNode("  " + b.d));
+    var log = [];
+    if (typeof e.startedAt === "number") log.push("started " + fmt(e.startedAt));
+    if (typeof e.doneAt === "number") log.push("done " + fmt(e.doneAt));
+    if (typeof e.startedAt === "number" && typeof e.doneAt === "number") log.push("took " + dur(e.doneAt - e.startedAt) + " (planned " + dur(planDur(b)) + ")");
+    if (log.length) {
+      var l = document.createElement("div");
+      l.className = "mono";
+      l.textContent = log.join(" · ");
+      meta.appendChild(l);
+    }
+
+    var actions = document.createElement("div");
+    actions.className = "actions";
+    actions.appendChild(btn("Started", "b-start", typeof e.startedAt === "number" && e.status !== "skipped", function () { setStatus(b, "started"); }));
+    actions.appendChild(btn("Done", "b-done", e.status === "done", function () { setStatus(b, "done"); }));
+    actions.appendChild(btn("Skip", "b-skip", e.status === "skipped", function () { setStatus(b, "skipped"); }));
+
+    var note = document.createElement("input");
+    note.className = "note";
+    note.id = "note-" + b.id;
+    note.type = "text";
+    note.placeholder = "Why it changed (optional)";
+    note.setAttribute("aria-label", "Note for " + b.t);
+    note.value = e.note || "";
+    note.addEventListener("change", function () { setNote(b, note.value); });
+    note.addEventListener("blur", function () { setNote(b, note.value); if (pendingRender) setTimeout(render, 0); });
+
+    card.appendChild(head);
+    card.appendChild(meta);
+    card.appendChild(actions);
+    card.appendChild(note);
+
+    li.appendChild(time);
+    li.appendChild(dot);
+    li.appendChild(card);
+    return li;
+  }
+  function tag(text, cls) {
+    var s = document.createElement("span");
+    s.className = "tag " + cls;
+    s.textContent = text;
+    return s;
+  }
+  function btn(text, cls, pressed, fn) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = cls;
+    b.textContent = text;
+    b.setAttribute("aria-pressed", pressed ? "true" : "false");
+    b.addEventListener("click", fn);
+    return b;
+  }
+
+  // Averages across every logged day, grouped by kind of block.
+  function renderAverages() {
+    var agg = {};
+    Object.keys(history).forEach(function (day) {
+      var bl = history[day] || {};
+      Object.keys(bl).forEach(function (id) {
+        var e = bl[id];
+        if (!e || typeof e.s !== "number") return;
+        var c = e.cat || "other";
+        var a = agg[c] || (agg[c] = { n: 0, skipped: 0, planned: 0, actual: 0, nDur: 0, drift: 0, nDrift: 0 });
+        a.n++;
+        if (e.status === "skipped") a.skipped++;
+        if (typeof e.startedAt === "number") { a.drift += e.startedAt - e.s; a.nDrift++; }
+        if (typeof e.startedAt === "number" && typeof e.doneAt === "number" && e.doneAt >= e.startedAt) {
+          a.actual += e.doneAt - e.startedAt;
+          a.planned += e.e - e.s;
+          a.nDur++;
+        }
+      });
+    });
+    var tb = document.getElementById("avg-body");
+    tb.textContent = "";
+    var keys = Object.keys(agg).sort(function (x, y) { return agg[y].n - agg[x].n; });
+    if (!keys.length) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 5;
+      td.textContent = "Nothing logged yet. Your first Started and Done taps fill this in.";
+      tr.appendChild(td);
+      tb.appendChild(tr);
+      return;
+    }
+    keys.forEach(function (k) {
+      var a = agg[k];
+      var tr = document.createElement("tr");
+      cell(tr, CATS[k] || k);
+      cell(tr, a.n + (a.skipped ? " (" + a.skipped + " skipped)" : ""), "num");
+      if (a.nDur) {
+        var p = a.planned / a.nDur, act = a.actual / a.nDur;
+        cell(tr, dur(p), "num");
+        cell(tr, dur(act), "num" + (act - p > 5 ? " over" : act - p < -5 ? " under" : ""));
+      } else {
+        cell(tr, "–", "num");
+        cell(tr, "–", "num");
+      }
+      if (a.nDrift) {
+        var dr = a.drift / a.nDrift;
+        cell(tr, signed(dr), "num" + (dr > 5 ? " over" : ""));
+      } else {
+        cell(tr, "–", "num");
+      }
+      tb.appendChild(tr);
+    });
+  }
+  function cell(tr, text, cls) {
+    var td = document.createElement("td");
+    if (cls) td.className = cls;
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+
+  function fluidReadouts(pj) {
+    var box = document.getElementById("drift-box");
+    var dv = document.getElementById("drift"), ds = document.getElementById("drift-sub");
+    box.classList.remove("is-late", "is-ok");
+    if (pj.dayStart === null) {
+      dv.textContent = "Not started";
+      ds.textContent = "Nothing runs until you tap Started on a block";
+    } else {
+      if (pj.slip > 2) { box.classList.add("is-late"); dv.textContent = dur(pj.slip) + " behind"; }
+      else if (pj.slip < -2) { box.classList.add("is-ok"); dv.textContent = dur(pj.slip) + " ahead"; }
+      else { box.classList.add("is-ok"); dv.textContent = "On pace"; }
+      ds.textContent = "Started " + fmt(pj.dayStart) + " · finish about " + fmt(pj.finish);
+    }
+    document.getElementById("anchor-label").textContent = "Up next";
+    var av = document.getElementById("anchor"), as = document.getElementById("anchor-sub");
+    var nxt = null;
+    for (var i = 0; i < blocks.length; i++) {
+      var st = entry(blocks[i].id).status;
+      if (!st) { nxt = blocks[i]; break; }
+    }
+    if (nxt) {
+      var pr = pj.by[nxt.id];
+      av.textContent = nxt.t;
+      as.textContent = (pr && typeof pr.s === "number" ? "about " + fmt(pr.s) + " · " : "") + dur(planDur(nxt));
+    } else {
+      av.textContent = "All done";
+      as.textContent = "Nothing left on today's sheet";
+    }
+  }
+
+  // Clock-driven bits only; no writes happen here.
+  function updateLive() {
+    if (todayKey() !== DAY) { location.reload(); return; }
+    var t = nowMin();
+    document.getElementById("clock").textContent = fmt(t);
+
+    var nowId = null, nowLabel = "Now", pj = null;
+    if (fluid) {
+      pj = project(t);
+      blocks.forEach(function (b) { var e = entry(b.id); if (!nowId && e.status === "started") nowId = b.id; });
+      if (!nowId) {
+        nowLabel = "Next";
+        blocks.forEach(function (b) { var s = entry(b.id).status; if (!nowId && s !== "done" && s !== "skipped") nowId = b.id; });
+      }
+      var byId = {};
+      blocks.forEach(function (b) { byId[b.id] = b; });
+      document.querySelectorAll(".stop").forEach(function (li) {
+        var b = byId[li.dataset.id], pr = b && pj.by[b.id];
+        if (!b) return;
+        var tm = li.querySelector(".time");
+        if (tm) tm.textContent = pr && typeof pr.s === "number" ? fmtShort(pr.s) : "·";
+        var rg = li.querySelector('[data-role="range"]');
+        if (rg) rg.textContent = rangeText(b, pr);
+      });
+    } else {
+      blocks.forEach(function (b) { if (t >= b.s && t < b.e && !nowId && !b.fixed) nowId = b.id; });
+      if (!nowId) blocks.forEach(function (b) { if (t >= b.s && t < b.e && !nowId) nowId = b.id; });
+    }
+    document.querySelectorAll(".stop").forEach(function (li) {
+      var on = li.dataset.id === nowId;
+      li.classList.toggle("is-now", on);
+      var nt = li.querySelector('[data-role="now"]');
+      if (nt) { nt.hidden = !on; if (on) nt.textContent = nowLabel; }
+    });
+
+    if (fluid) { fluidReadouts(pj); } else {
+    document.getElementById("anchor-label").textContent = "Next fixed time";
+    var cd = currentDrift();
+    var box = document.getElementById("drift-box");
+    var dv = document.getElementById("drift"), ds = document.getElementById("drift-sub");
+    box.classList.remove("is-late", "is-ok");
+    if (!cd) {
+      dv.textContent = "Not started";
+      ds.textContent = blocks.length ? "Tap Started when you begin a block" : "No plan loaded";
+    } else if (cd.drift > 2) {
+      box.classList.add("is-late");
+      dv.textContent = dur(cd.drift) + " behind";
+      ds.textContent = "Last start: " + cd.block.t;
+    } else if (cd.drift < -2) {
+      box.classList.add("is-ok");
+      dv.textContent = dur(cd.drift) + " ahead";
+      ds.textContent = "Last start: " + cd.block.t;
+    } else {
+      box.classList.add("is-ok");
+      dv.textContent = "On schedule";
+      ds.textContent = "Last start: " + cd.block.t;
+    }
+
+    var next = null;
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i], st = entry(b.id).status;
+      if (b.fixed && b.s >= t && st !== "done" && st !== "skipped") { next = b; break; }
+    }
+    var av = document.getElementById("anchor"), as = document.getElementById("anchor-sub");
+    if (next) {
+      av.textContent = fmt(next.s);
+      var lead = next.s - t;
+      var msg = next.t + " · in " + dur(lead);
+      if (cd && cd.drift > 2 && cd.drift >= lead) msg += " · at this pace you'll miss it";
+      as.textContent = msg;
+    } else {
+      av.textContent = "None left";
+      as.textContent = "Nothing else is locked today";
+    }
+    }
+
+    var done = 0, skip = 0;
+    blocks.forEach(function (b) { var s = entry(b.id).status; if (s === "done") done++; else if (s === "skipped") skip++; });
+    document.getElementById("t-done").textContent = done;
+    document.getElementById("t-skip").textContent = skip;
+    document.getElementById("t-left").textContent = blocks.length - done - skip;
+    var total = blocks.length || 1;
+    document.getElementById("pg-done").style.width = (done / total * 100) + "%";
+    document.getElementById("pg-skip").style.width = (skip / total * 100) + "%";
+    document.getElementById("progress").setAttribute("aria-valuenow", Math.round((done + skip) / total * 100));
+  }
+
+  // ---------- boot ----------
+  loadLocal();
+  render();
+  setInterval(updateLive, 30000);
+
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("db").then(function (db) {
+      if (!db) return;
+      docRef = db.doc("days/" + DAY);
+      setSync("Connecting…");
+
+      db.doc("plans/" + DAY).onSnapshot(function (snap) {
+        if (snap.exists) {
+          var body = snap.data() || {};
+          setPlan(JSON.parse(JSON.stringify(body.items || [])), !!body.fluid);
+          render();
+        }
+      }, function () {});
+
+      var first = true;
+      db.collection("days").onSnapshot(function (qs) {
+        var seenToday = false;
+        var next = {};
+        qs.docs.forEach(function (d) {
+          var body = d.data() || {};
+          next[d.id] = JSON.parse(JSON.stringify(body.blocks || {}));
+          if (d.id === DAY) seenToday = true;
+        });
+        if (seenToday) {
+          state = next[DAY];
+          saveLocal();
+          setSync(qs.metadata && qs.metadata.hasPendingWrites ? "Saving…" : "Saved · Claude can see this");
+        } else {
+          next[DAY] = state;
+          if (first) {
+            if (Object.keys(state).length) save(); else setSync("Ready · Claude can see this");
+          }
+        }
+        history = next;
+        first = false;
+        render();
+      }, function () {
+        setSync("Offline. Saving on this device");
+      });
+    }).catch(function () {});
+  }
+})();
+</script>
