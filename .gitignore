@@ -7,3 +7,6 @@ coverage/
 .env*
 !.env.example
 .claude/handoff.md
+
+# Run Sheet personal schedule data (never commit)
+runsheet/data/
