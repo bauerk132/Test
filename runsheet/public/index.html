@@ -377,6 +377,7 @@
   </section>
 </div>
 
+<script src="db-shim.js"></script>
 <script>
 (function () {
   var TZ = "America/New_York";
@@ -535,7 +536,7 @@
     writeChain = writeChain.then(function () {
       setSync("Saving…");
       return docRef.set(body).then(function () {
-        setSync("Saved · Claude can see this");
+        setSync("Saved · synced to laptop");
       }, function (err) {
         setSync(err && err.code === "invalid_argument" ? "Read-only for you" : "Couldn't save online. Kept on this device");
       });
@@ -938,11 +939,11 @@
         if (seenToday) {
           state = next[DAY];
           saveLocal();
-          setSync(qs.metadata && qs.metadata.hasPendingWrites ? "Saving…" : "Saved · Claude can see this");
+          setSync(qs.metadata && qs.metadata.hasPendingWrites ? "Saving…" : "Saved · synced to laptop");
         } else {
           next[DAY] = state;
           if (first) {
-            if (Object.keys(state).length) save(); else setSync("Ready · Claude can see this");
+            if (Object.keys(state).length) save(); else setSync("Ready · synced to laptop");
           }
         }
         history = next;
