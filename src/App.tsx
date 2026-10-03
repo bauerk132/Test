@@ -24,6 +24,21 @@ for (const modId in GUIDED) {
   }
 }
 
+// 💡 What: Precompute a flat map of practice problems for O(1) lookups
+// 🎯 Why: Eliminates O(N) array traversals (via .find()) when generating variants or finding problems.
+// 📊 Impact: O(1) retrieval instead of O(N) search on each variant generation or grading step.
+const practiceProblemMap = new Map<string, PracticeProblem>();
+for (const modId in UNIFIED_EXAM_QUESTIONS) {
+  for (const p of UNIFIED_EXAM_QUESTIONS[modId as unknown as ModuleId] || []) {
+    practiceProblemMap.set(p.id, p);
+  }
+}
+
+// 💡 What: Extract default guided progress object outside of the component.
+// 🎯 Why: Prevents creating a new object reference on every render, which broke React.memo.
+// 📊 Impact: Stops cascading re-renders of GuidedCard when the global timer ticks.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = { currentStep: 0, stepResults: [], complete: false };
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
@@ -60,6 +75,12 @@ export default function App() {
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
 
+  const handleToggleTimer = useCallback(() => setIsTimerRunning(p => !p), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
+
   // Timer Effect
   useEffect(() => {
     if (isTimerRunning) {
@@ -74,17 +95,17 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -102,7 +123,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -190,14 +211,7 @@ export default function App() {
 
   // Generate a single problem variant with randomized numbers
   const handleGenerateVariant = useCallback((problemId: string) => {
-    let baseProblem: PracticeProblem | null = null;
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === problemId);
-      if (p) {
-        baseProblem = p;
-        break;
-      }
-    }
+    const baseProblem = practiceProblemMap.get(problemId);
     if (!baseProblem) return;
 
     const currentCount = variantCounters[problemId] || 1;
@@ -221,40 +235,44 @@ export default function App() {
   }, []);
 
   // Bulk shuffle all problems in a module with new algorithmic variants
-  const handleShuffleModuleVariants = (modId: ModuleId) => {
+  const handleShuffleModuleVariants = useCallback((modId: ModuleId) => {
     const problems = UNIFIED_EXAM_QUESTIONS[modId] || [];
-    const updatedVariants = { ...problemVariants };
-    const updatedCounters = { ...variantCounters };
-    const updatedAnswers = { ...userAnswers };
-    const updatedWork = { ...userWork };
 
-    problems.forEach((p) => {
-      const currentCount = updatedCounters[p.id] || 1;
-      const nextCount = currentCount + 1;
-      updatedCounters[p.id] = nextCount;
-      updatedVariants[p.id] = generateProblemVariant(p, nextCount);
-      delete updatedAnswers[p.id];
-      delete updatedWork[p.id];
+    setVariantCounters(prevCounters => {
+      const updatedCounters = { ...prevCounters };
+      const newVariants: Record<string, PracticeProblem> = {};
+
+      problems.forEach((p) => {
+        const currentCount = updatedCounters[p.id] || 1;
+        const nextCount = currentCount + 1;
+        updatedCounters[p.id] = nextCount;
+        newVariants[p.id] = generateProblemVariant(p, nextCount);
+      });
+
+      setProblemVariants(prevVariants => ({ ...prevVariants, ...newVariants }));
+      return updatedCounters;
     });
 
-    setProblemVariants(updatedVariants);
-    setVariantCounters(updatedCounters);
-    setUserAnswers(updatedAnswers);
-    setUserWork(updatedWork);
-  };
+    setUserAnswers(prev => {
+      const updated = { ...prev };
+      problems.forEach(p => delete updated[p.id]);
+      return updated;
+    });
+    setUserWork(prev => {
+      const updated = { ...prev };
+      problems.forEach(p => delete updated[p.id]);
+      return updated;
+    });
+  }, []);
 
   // Find a problem from active variants or baseline bank
-  const findProblem = (qId: string): PracticeProblem | null => {
+  const findProblem = useCallback((qId: string): PracticeProblem | null => {
     if (problemVariants[qId]) return problemVariants[qId];
-    for (const m of selectedMods) {
-      const p = (UNIFIED_EXAM_QUESTIONS[m] || []).find((x) => x.id === qId);
-      if (p) return p;
-    }
-    return null;
-  };
+    return practiceProblemMap.get(qId) || null;
+  }, [problemVariants]);
 
   // Grade Practice / Test Problem
-  const gradeSingleProblem = (
+  const gradeSingleProblem = useCallback((
     qId: string,
     rawAns: string,
     work: string
@@ -284,7 +302,7 @@ export default function App() {
     }
 
     return { points: 0, status: 'wrong' };
-  };
+  }, [findProblem]);
 
   // Resolve all active exam problems across selected modules (incorporating active variants)
   const activeProblems: PracticeProblem[] = useMemo(() => {
@@ -293,7 +311,7 @@ export default function App() {
     );
   }, [selectedMods, problemVariants]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     setIsTimerRunning(false);
     setIsGraded(true);
 
@@ -321,9 +339,9 @@ export default function App() {
         origin: { y: 0.6 },
       });
     } catch (e) {}
-  };
+  }, [activeProblems, userAnswers, userWork, gradeSingleProblem]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -332,7 +350,7 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Progress Calculations
   const {
@@ -398,13 +416,13 @@ export default function App() {
     return { earnedPts: earned, maxPts: max, modScores: scores };
   }, [activeProblems, selectedMods, practiceResults]);
 
-  const scrollToAnchor = (mod: ModuleId) => {
+  const scrollToAnchor = useCallback((mod: ModuleId) => {
     setActiveTab(mod);
     const el = document.getElementById(`mod-section-${mod}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
 
   const moduleHeaderInfo: Record<
     ModuleId,
@@ -447,11 +465,11 @@ export default function App() {
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -584,11 +602,7 @@ export default function App() {
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
                             progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
+                              guidedState[g.id] || DEFAULT_GUIDED_PROGRESS
                             }
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
