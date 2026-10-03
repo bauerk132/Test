@@ -14,7 +14,7 @@ The Run Sheet runs on Kyle's laptop, his phone opens it over home Wi-Fi, and a t
 ## Spec
 Run each step in PowerShell, in the order given. Paste the output of each one.
 1. Get the code. If there's no clone on the laptop yet: `git clone https://github.com/bauerk132/Test.git`, then `cd Test`. Then:
-   `git fetch origin claude/festive-ramanujan-a33mdv` · `git checkout claude/festive-ramanujan-a33mdv` · `git pull`
+   `git checkout main` · `git pull`. All the Run Sheet code is merged into `main`.
 2. `cd runsheet` · `npm install` · `npm test`. Expect `# fail 0`; the pass count is 44 or more.
 3. `powershell -ExecutionPolicy Bypass -File scripts\start.ps1 -DryRun`. Expect an `On your phone: http://192.168.x.x:4000` line, or 10.x.x.x on some routers.
    Compare it with `ipconfig`: it should be the IPv4 address of the adapter that **has a Default Gateway**.

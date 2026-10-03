@@ -32,4 +32,5 @@ Run these in PowerShell from `runsheet\`:
 
 ## Done = report back
 Paste the output of acceptance 1 and 2, plus `git diff --stat` (it should list one file).
-Codex reviews the diff, then commits to `claude/festive-ramanujan-a33mdv` (`git pull` first) and pushes.
+Codex reviews the diff, then: `git checkout main` · `git pull` · `git checkout -b laptop/002-startps1` · commit · `git push -u origin laptop/002-startps1`.
+Kyle opens the pull request on GitHub and merges it.
