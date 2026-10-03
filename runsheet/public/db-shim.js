@@ -6,6 +6,9 @@
 //   db.doc("days/2026-10-06").set(body)            -> PUT /api/doc/days/2026-10-06
 //   db.doc("plans/2026-10-06").onSnapshot(fn, err) -> GET /api/doc/plans/2026-10-06 every 5 s
 //   db.collection("days").onSnapshot(fn, err)      -> GET /api/col/days every 5 s
+//
+// If the laptop is asleep when the phone saves, the save waits in this browser's storage and
+// is sent (merged with any newer taps) as soon as the laptop answers again.
 (function () {
   "use strict";
   if (window.claude && typeof window.claude.use === "function") return; // real artifact runtime: leave it alone
@@ -15,8 +18,22 @@
   var writing = 0;  // writes in flight
   var writeSeq = 0; // bumps when a write starts or ends, so a poll that overlapped a write is thrown away
   var pollers = []; // so a finished write, or the phone waking up, can refresh right away
+  var queue = {};   // one promise chain per doc, so this device never races itself
+  var PENDING_KEY = "runsheet-pending";
+  var pending = loadPending(); // "days/2026-10-06" -> { body, base }: saved by the page, not yet by the laptop
 
   function isObj(v) { return v !== null && typeof v === "object" && !Array.isArray(v); }
+
+  // Kept in localStorage so taps made while the laptop was asleep survive a page reload too.
+  function loadPending() {
+    try { var p = JSON.parse(window.localStorage.getItem(PENDING_KEY)); return isObj(p) ? p : {}; } catch (e) { return {}; }
+  }
+  function storePending() {
+    try { window.localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (e) { /* private mode: memory only */ }
+  }
+  function clearPending(key, job) {
+    if (pending[key] === job) { delete pending[key]; storePending(); }
+  }
 
   function request(method, url, payload) {
     return fetch(url, {
@@ -58,9 +75,29 @@
     return out;
   }
 
+  // The page's save. Record it first, then send it once any earlier save of the same doc is done.
   function save(col, id, body) {
     var key = col + "/" + id;
-    var base = seen[key]; // what the page's copy was built from
+    // base = what the page's copy was built from. An unsent save keeps its base: the page hasn't
+    // heard from the laptop since.
+    pending[key] = { body: body, base: pending[key] ? pending[key].base : seen[key] };
+    storePending();
+    return enqueue(col, id);
+  }
+
+  function enqueue(col, id) {
+    var key = col + "/" + id;
+    var run = (queue[key] || Promise.resolve()).then(function () { return send(col, id); });
+    queue[key] = run.catch(function () {}); // a failed save must not block the next one
+    return run;
+  }
+
+  // Send the newest unsent body for this doc. Several taps in a row become one request.
+  function send(col, id) {
+    var key = col + "/" + id;
+    var job = pending[key];
+    if (!job) return; // an earlier send already delivered it
+    var base = job.base;
     var merged = false;
     writing++; writeSeq++;
 
@@ -70,21 +107,39 @@
         // 409: the other device saved first. Re-read, keep both devices' changes, try again.
         return request("GET", docUrl(col, id)).then(function (cur) {
           merged = true;
-          return put(merge(base && base.body, body, cur.body), cur.version, triesLeft - 1);
+          return put(merge(base && base.body, job.body, cur.body), cur.version, triesLeft - 1);
         });
       });
     }
-    function finish() { writing--; writeSeq++; refreshAll(); }
 
-    return put(body, base ? base.version : 0, 3).then(function (doc) {
+    return put(job.body, base ? base.version : 0, 3).then(function (doc) {
+      var fresh = { version: doc.version, body: doc.body };
       // After a merge the page doesn't have the other device's taps yet, so keep the old base
       // until the refresh below delivers the merged day. Otherwise the server now matches the page.
-      if (!merged) remember(col, doc);
-      finish();
+      if (!merged) {
+        seen[key] = fresh;
+        if (pending[key] && pending[key] !== job) { pending[key].base = fresh; storePending(); } // a newer tap is queued
+      }
+      clearPending(key, job);
+      writing--; writeSeq++;
+      refreshAll();
     }, function (err) {
-      finish();
+      writing--; writeSeq++;
+      // A 4xx (other than a conflict) will never succeed, so drop it. Anything else (laptop asleep,
+      // Wi-Fi gone, server error) stays pending and is sent again when a poll gets through.
+      if (err.status >= 400 && err.status < 500 && err.status !== 409) clearPending(key, job);
       throw err; // the page shows "Couldn't save online. Kept on this device"
     });
+  }
+
+  // Send every unsent save. Returns true if there were any, so the poll holds back old server data.
+  function flushPending() {
+    var keys = Object.keys(pending);
+    keys.forEach(function (key) {
+      var i = key.indexOf("/");
+      enqueue(key.slice(0, i), key.slice(i + 1)).catch(function () { /* still pending; the next poll retries */ });
+    });
+    return keys.length > 0;
   }
 
   // Ask the server every POLL_MS and call deliver() only when the answer changed,
@@ -101,6 +156,9 @@
         // A write started or ended while we were asking, so this answer may be stale. Skip it:
         // the write refreshes every poller when it's done.
         if (stopped || writing || seq !== writeSeq) return;
+        // The laptop answers again but has older data than this device: send ours first.
+        // The refresh after that save delivers the merged result.
+        if (flushPending()) return;
         var key = JSON.stringify(result);
         if (key === lastKey && !failed) return;
         lastKey = key;

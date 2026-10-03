@@ -60,11 +60,24 @@ PowerShell **as Administrator** and run:
 New-NetFirewallRule -DisplayName "Run Sheet 4000" -Direction Inbound -Protocol TCP -LocalPort 4000 -Profile Private -Action Allow
 ```
 
+## When the laptop is asleep
+
+Tap away. The phone says **"Couldn't save online. Kept on this device"** and keeps
+the tap in its browser. When the laptop answers again, the tap is sent by itself and
+merged with anything the laptop saved meanwhile. Don't clear the phone browser's
+site data while that message shows, or the waiting taps are lost.
+
 ## Safety
 
 - There is **no login**. Anyone on the same Wi-Fi can open the page and see your data.
 - Do not run it on public Wi-Fi (library, cafe, school).
 - Your data lives in `runsheet/data/`. That folder is gitignored and is never committed.
+- The server only answers on this laptop's own addresses: an IP address, `localhost`,
+  or a local name like `kyle-laptop` or `kyle-laptop.local`. This blocks **DNS rebinding**,
+  a trick where a website points its own name at your laptop so that page can read your data.
+- Saves must come from the Run Sheet page itself. A save sent by any other site is refused.
+- To reach it by another name, such as a VPN name, list it before starting:
+  `$env:RUNSHEET_ALLOWED_HOSTS = "laptop.example.ts.net"` (separate several with commas).
 
 ## Plans
 
@@ -105,6 +118,10 @@ powershell -ExecutionPolicy Bypass -File scripts\start.ps1 -Port 4001
 ```
 
 If you change the port, the firewall rule needs the new port number too.
+
+**"Run Sheet only answers on this laptop's own addresses"**
+You opened it by a name the server doesn't know. Use the address the script prints,
+or add the name to `RUNSHEET_ALLOWED_HOSTS` (see Safety).
 
 **"Node.js not found"**
 Install Node LTS from https://nodejs.org, then close and reopen PowerShell.

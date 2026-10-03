@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const { createStore } = require("./lib/store");
 const { validatePlan } = require("./lib/validate");
+const { lanOnly } = require("./lib/guard");
 
 // Same rule as scripts/import.js, so both read and write the same folder.
 const DEFAULT_DATA = process.env.RUNSHEET_DATA || path.join(__dirname, "data");
@@ -9,6 +10,11 @@ const DEFAULT_DATA = process.env.RUNSHEET_DATA || path.join(__dirname, "data");
 function createApp(dataDir = DEFAULT_DATA) {
   const store = createStore(dataDir);
   const app = express();
+  app.disable("x-powered-by"); // don't advertise "Express" to whoever asks
+
+  // First, before anything else runs: only answer on this laptop's own addresses (lib/guard.js).
+  // RUNSHEET_ALLOWED_HOSTS adds names, comma-separated, e.g. a VPN name for the laptop.
+  app.use(lanOnly({ allowedHosts: (process.env.RUNSHEET_ALLOWED_HOSTS || "").split(",") }));
 
   // Cap JSON bodies so a stray client can't send huge payloads.
   app.use(express.json({ limit: "256kb" }));
