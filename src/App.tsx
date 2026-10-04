@@ -24,11 +24,49 @@ for (const modId in GUIDED) {
   }
 }
 
+const MODULE_HEADER_INFO: Record<
+  ModuleId,
+  { title: string; subtitle: string; emoji: string; gradient: string }
+> = {
+  5: {
+    title: 'Polynomial & Power Functions',
+    subtitle: '5 Authentic Exam & Optimization Questions',
+    emoji: '📐',
+    gradient: 'from-blue-500 to-indigo-500',
+  },
+  6: {
+    title: 'Rational & Radical Functions',
+    subtitle: '5 Authentic Exam, Asymptote & Radical Questions',
+    emoji: '⚡',
+    gradient: 'from-cyan-400 to-blue-500',
+  },
+  7: {
+    title: 'Transformations & Symmetry',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '🔄',
+    gradient: 'from-purple-400 to-indigo-400',
+  },
+  8: {
+    title: 'Exponential Functions',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '📈',
+    gradient: 'from-emerald-400 to-teal-400',
+  },
+  9: {
+    title: 'Logarithmic Functions',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '🧮',
+    gradient: 'from-amber-400 to-orange-400',
+  },
+};
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
   return next;
 };
+
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = { currentStep: 0, stepResults: [], complete: false };
 
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
@@ -59,6 +97,13 @@ export default function App() {
 
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
+
+  // Stable Header Callbacks
+  const handleToggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
 
   // Timer Effect
   useEffect(() => {
@@ -406,52 +451,16 @@ export default function App() {
     }
   };
 
-  const moduleHeaderInfo: Record<
-    ModuleId,
-    { title: string; subtitle: string; emoji: string; gradient: string }
-  > = {
-    5: {
-      title: 'Polynomial & Power Functions',
-      subtitle: '5 Authentic Exam & Optimization Questions',
-      emoji: '📐',
-      gradient: 'from-blue-500 to-indigo-500',
-    },
-    6: {
-      title: 'Rational & Radical Functions',
-      subtitle: '5 Authentic Exam, Asymptote & Radical Questions',
-      emoji: '⚡',
-      gradient: 'from-cyan-400 to-blue-500',
-    },
-    7: {
-      title: 'Transformations & Symmetry',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '🔄',
-      gradient: 'from-purple-400 to-indigo-400',
-    },
-    8: {
-      title: 'Exponential Functions',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '📈',
-      gradient: 'from-emerald-400 to-teal-400',
-    },
-    9: {
-      title: 'Logarithmic Functions',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '🧮',
-      gradient: 'from-amber-400 to-orange-400',
-    },
-  };
-
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -519,7 +528,7 @@ export default function App() {
             {selectedMods.map((modId) => {
               const guidedList = GUIDED[modId] || [];
               const examList = UNIFIED_EXAM_QUESTIONS[modId] || [];
-              const meta = moduleHeaderInfo[modId];
+              const meta = MODULE_HEADER_INFO[modId];
 
               return (
                 <div key={modId} id={`mod-section-${modId}`} className="mb-16 scroll-mt-28">
@@ -583,13 +592,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
