@@ -11,7 +11,8 @@ interface HeaderProps {
   onNavigateHome?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+// ⚡ Bolt Optimization: Wrapped in React.memo to prevent unnecessary re-renders when App.tsx state changes (like the global timer ticking)
+export const Header: React.FC<HeaderProps> = React.memo(({
   seconds,
   onOpenSandbox,
   onOpenGithub,
@@ -93,4 +94,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});

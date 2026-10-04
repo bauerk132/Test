@@ -145,7 +145,8 @@ const MODULES_META: ModMeta[] = [
   },
 ];
 
-export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
+// ⚡ Bolt Optimization: Wrapped in React.memo to prevent unnecessary re-renders when App.tsx state changes (like the global timer ticking)
+export const ModuleSelector: React.FC<ModuleSelectorProps> = React.memo(({
   selectedMods,
   onToggleMod,
   onSelectPreset,
@@ -373,4 +374,4 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
       </div>
     </div>
   );
-};
+});

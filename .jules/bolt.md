@@ -7,3 +7,6 @@
 ## 2024-09-26 - Optimized Guided Example Lookup
 **Learning:** O(N) array traversals inside callback functions like `handleCheckStep` and `handleNextStep` (which can be called frequently) can be heavily optimized by precomputing a flat map for O(1) lookups.
 **Action:** When working with nested structured static data (like dictionaries grouped by module ID), flatten it into a module-scoped `Map` if frequent O(1) retrieval by ID is needed. Ensure `import` statements stay at the top of the file before any logic.
+## 2026-09-28 - Memoization of Unmemoized Parent Callbacks and Child Components
+**Learning:** Found that relying on 'React.memo' inside nested children (like PracticeCard) is not enough if top-level parent components like Header and ModuleSelector are not memoized and their passed callbacks (e.g. from App.tsx) re-create on every global timer tick (every 1000ms), which defeats the purpose of the child memoization.
+**Action:** Used useCallback on heavy App.tsx handlers and React.memo on top-level layout components (Header, ModuleSelector, ResultsView) to stop render thrashing up high before it cascades down.
