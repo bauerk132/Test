@@ -17,7 +17,9 @@ interface KeyGroup {
   keys: { label: string; insert: string; desc?: string }[];
 }
 
-export const MathKeypad: React.FC<MathKeypadProps> = ({
+// ⚡ Bolt Optimization: Wrapped MathKeypad in React.memo.
+// Why: Prevents expensive keypad UI from re-rendering on every user keystroke.
+export const MathKeypad: React.FC<MathKeypadProps> = React.memo(({
   onInsert,
   onClear,
   onBackspace,
@@ -267,4 +269,4 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
       )}
     </div>
   );
-};
+});

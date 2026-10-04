@@ -16,6 +16,15 @@ import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 import { GuidedExample } from './types';
 
+// ⚡ Bolt Optimization: Extracted object literal out of render loop to provide stable reference.
+// Why: Prevents GuidedCard React.memo from breaking when state is undefined.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
+
 // Precompute a flat map of guided examples for O(1) lookups
 const guidedExampleMap = new Map<string, GuidedExample>();
 for (const modId in GUIDED) {
@@ -35,9 +44,11 @@ export default function App() {
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
 
   // Live Timer
-  const [seconds, setSeconds] = useState(0);
+  // ⚡ Bolt Optimization: Removed global 'seconds' timer state.
+  // Why: Prevents 1000ms re-renders of the entire App component tree.
+  const [timerResetKey, setTimerResetKey] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
 
   // Guided Progression State: exampleId -> GuidedProgress
   const [guidedState, setGuidedState] = useState<Record<string, GuidedProgress>>({});
@@ -60,19 +71,7 @@ export default function App() {
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
 
-  // Timer Effect
-  useEffect(() => {
-    if (isTimerRunning) {
-      timerRef.current = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isTimerRunning]);
+
 
   const toggleMod = (mod: ModuleId) => {
     setSelectedMods((prev) =>
@@ -328,7 +327,7 @@ export default function App() {
     setUserWork({});
     setPracticeResults({});
     setIsGraded(false);
-    setSeconds(0);
+    setTimerResetKey((prev) => prev + 1);
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -445,7 +444,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
       <Header
-        seconds={seconds}
+        timerResetKey={timerResetKey}
         isTimerRunning={isTimerRunning}
         onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
         onOpenSandbox={() => setIsSandboxOpen(true)}
@@ -584,11 +583,7 @@ export default function App() {
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
                             progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
+                              guidedState[g.id] || DEFAULT_GUIDED_PROGRESS
                             }
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}

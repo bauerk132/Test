@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { PracticeProblem, PracticeResult } from '../types';
 import { FunctionVisualizer } from './FunctionVisualizer';
 import { MathKeypad } from './MathKeypad';
@@ -35,29 +35,31 @@ export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
   const [showHint, setShowHint] = useState(false);
   const [activeTarget, setActiveTarget] = useState<'answer' | 'work'>('answer');
 
-  const handleKeypadInsert = (symbol: string) => {
+  // ⚡ Bolt Optimization: Wrapped keypad handlers in useCallback.
+  // Why: Stabilizes props passed to MathKeypad so its React.memo doesn't break.
+  const handleKeypadInsert = useCallback((symbol: string) => {
     if (activeTarget === 'answer') {
       onAnswerChange(problem.id, (answer || '') + symbol);
     } else {
       onWorkChange(problem.id, (work || '') + symbol);
     }
-  };
+  }, [activeTarget, onAnswerChange, onWorkChange, problem.id, answer, work]);
 
-  const handleKeypadClear = () => {
+  const handleKeypadClear = useCallback(() => {
     if (activeTarget === 'answer') {
       onAnswerChange(problem.id, '');
     } else {
       onWorkChange(problem.id, '');
     }
-  };
+  }, [activeTarget, onAnswerChange, onWorkChange, problem.id]);
 
-  const handleKeypadBackspace = () => {
+  const handleKeypadBackspace = useCallback(() => {
     if (activeTarget === 'answer') {
       onAnswerChange(problem.id, (answer || '').slice(0, -1));
     } else {
       onWorkChange(problem.id, (work || '').slice(0, -1));
     }
-  };
+  }, [activeTarget, onAnswerChange, onWorkChange, problem.id, answer, work]);
 
   const getDiffBadge = (diff: 'easy' | 'medium' | 'hard') => {
     switch (diff) {
