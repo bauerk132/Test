@@ -60,6 +60,15 @@ export default function App() {
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
 
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleCloseFormulas = useCallback(() => setIsFormulaOpen(false), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
+  const handleToggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
+
   // Timer Effect
   useEffect(() => {
     if (isTimerRunning) {
@@ -74,17 +83,17 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -102,7 +111,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -221,7 +230,7 @@ export default function App() {
   }, []);
 
   // Bulk shuffle all problems in a module with new algorithmic variants
-  const handleShuffleModuleVariants = (modId: ModuleId) => {
+  const handleShuffleModuleVariants = useCallback((modId: ModuleId) => {
     const problems = UNIFIED_EXAM_QUESTIONS[modId] || [];
     const updatedVariants = { ...problemVariants };
     const updatedCounters = { ...variantCounters };
@@ -241,7 +250,7 @@ export default function App() {
     setVariantCounters(updatedCounters);
     setUserAnswers(updatedAnswers);
     setUserWork(updatedWork);
-  };
+  }, [problemVariants, variantCounters, userAnswers, userWork]);
 
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
@@ -447,11 +456,11 @@ export default function App() {
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -693,7 +702,7 @@ export default function App() {
             guidedData={GUIDED}
             guidedState={guidedState}
             onReset={handleReset}
-            onOpenGithub={() => setIsGithubOpen(true)}
+            onOpenGithub={handleOpenGithub}
           />
         )}
       </main>
@@ -701,19 +710,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormulas}
       />
     </div>
   );

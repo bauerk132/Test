@@ -17,7 +17,7 @@ interface ResultsViewProps {
   onOpenGithub: () => void;
 }
 
-export const ResultsView: React.FC<ResultsViewProps> = ({
+export const ResultsView: React.FC<ResultsViewProps> = React.memo(({
   selectedMods,
   earnedPts,
   maxPts,
@@ -528,4 +528,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       )}
     </div>
   );
-};
+});
