@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ModuleId, ModuleStats, PracticeProblem, PracticeResult, GuidedProgress, GuidedExample } from '../types';
 import { MICRO_SKILLS } from '../data/microSkills';
 import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
@@ -16,6 +16,47 @@ interface ResultsViewProps {
   onReset: () => void;
   onOpenGithub: () => void;
 }
+
+const GRADE_COLORS: Record<string, { ring: string; text: string; bg: string }> = {
+  A: { ring: 'border-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  B: { ring: 'border-teal-500', text: 'text-teal-400', bg: 'bg-teal-500/10' },
+  C: { ring: 'border-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
+  D: { ring: 'border-rose-400', text: 'text-rose-400', bg: 'bg-rose-500/10' },
+  F: { ring: 'border-rose-600', text: 'text-rose-500', bg: 'bg-rose-500/10' },
+};
+
+const ADVICE_MAP: Record<string, string> = {
+  'M5.1': 'Parabola vertex: h = -b/(2a), k = f(h). Vertex is maximum if a < 0 and minimum if a > 0.',
+  'M5.2': 'Leading term test: an · xⁿ determines end behavior. Odd degree ➔ opposite ends; Even degree ➔ same direction.',
+  'M5.3': 'Multiplicity rule: Even multiplicity touches axis and turns around; Odd multiplicity crosses the axis.',
+  'M5.4': 'Synthetic division: Use divisor c for (x - c). Remember to insert 0 for missing degree terms.',
+  'M5.5': 'Rational Zero Theorem: ±(factors of a0) / (factors of an). Factor completely to uncover imaginary complex roots.',
+  'M6.1': 'Rational domain: set denominator ≠ 0. Non-canceling factors yield vertical asymptotes x = c.',
+  'M6.2': 'Removable holes: factor both numerator and denominator; canceled factors give hole coordinates (c, f_reduced(c)).',
+  'M6.3': 'Slant asymptote: if degree(num) = degree(denom) + 1, use polynomial long division. The linear quotient is the slant asymptote line y = mx + b.',
+  'M6.4': 'Rational equations: multiply all terms by LCD to clear denominators. Always check against original restrictions to discard extraneous roots.',
+  'M6.5': 'Inverse functions: swap x and y and isolate y. For radical equations, square both sides and check for extraneous solutions.',
+  'M7.1': 'Practice point mapping (x, y) ➔ (x, y + k). Vertical shifts only affect y-values, not x.',
+  'M7.2': 'Remember: f(x - h) shifts RIGHT h units, f(x + h) shifts LEFT h units. The sign inside is inverted.',
+  'M7.7': "Use x' = x/b + h and y' = a·y + k. Factor the argument inside first to identify b and h accurately.",
+  'M7.8': 'Compute f(-x) completely before comparing. A lone constant term or mixed powers usually breaks symmetry.',
+  'M7.9': 'Domain responds to horizontal shifts/scalings only; Range responds to vertical stretch and shifts.',
+  'M7.6': 'Transformations order: horizontal shift ➔ horizontal scale ➔ reflection ➔ vertical scale ➔ vertical shift.',
+  'M8.3': 'Plot anchor points at exponent -1, 0, and 1. Asymptote is always y = 0 for the basic parent form.',
+  'M8.4': 'Only the vertical shift k moves the horizontal asymptote: new HA is y = k.',
+  'M8.7': 'Take ln of both sides, bring powers out with power rule, and distribute thoroughly before isolating x.',
+  'M8.8': 'Identify n accurately: annual n=1, monthly n=12, daily n=365. For continuous growth, use A = Pe^(rt).',
+  'M8.9': 'Half-life decay model: Q(t) = Q₀(1/2)^(t/h). Rate constant k = -ln(2) / h.',
+  'M8.10': 'Change of base: argument on top, base on bottom: log_b(a) = ln(a) / ln(b).',
+  'M9.1': 'Fundamental definition: log_b(x) = y ⟺ b^y = x. "Base stays the base, other two swap."',
+  'M9.2': 'Express both the argument and base as powers of the same number: log_b(b^p) = p.',
+  'M9.8': 'Vertical asymptote is at argument = 0: x = h. Domain is x > h. x-intercept is where argument = 1.',
+  'M9.11': 'Expanding: move power rule exponents LAST. Numerator gets +, denominator gets -.',
+  'M9.13': 'Condensing: move coefficients to exponents FIRST. Group + in numerator, - in denominator.',
+  'M9.14': 'Isolate log term, convert to exponential form, solve, and check argument > 0.',
+  'M9.15': 'Always check candidate roots in original equations; discard any root that produces a non-positive argument.',
+  'M9.16': 'Each step of 1 on the Richter or Decibel scale is an order of magnitude (10^x factor difference).',
+};
 
 export const ResultsView: React.FC<ResultsViewProps> = ({
   selectedMods,
@@ -37,96 +78,62 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const grade =
     pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
 
-  const gradeColors: Record<string, { ring: string; text: string; bg: string }> = {
-    A: { ring: 'border-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    B: { ring: 'border-teal-500', text: 'text-teal-400', bg: 'bg-teal-500/10' },
-    C: { ring: 'border-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
-    D: { ring: 'border-rose-400', text: 'text-rose-400', bg: 'bg-rose-500/10' },
-    F: { ring: 'border-rose-600', text: 'text-rose-500', bg: 'bg-rose-500/10' },
-  };
-
-  const adviceMap: Record<string, string> = {
-    'M5.1': 'Parabola vertex: h = -b/(2a), k = f(h). Vertex is maximum if a < 0 and minimum if a > 0.',
-    'M5.2': 'Leading term test: an · xⁿ determines end behavior. Odd degree ➔ opposite ends; Even degree ➔ same direction.',
-    'M5.3': 'Multiplicity rule: Even multiplicity touches axis and turns around; Odd multiplicity crosses the axis.',
-    'M5.4': 'Synthetic division: Use divisor c for (x - c). Remember to insert 0 for missing degree terms.',
-    'M5.5': 'Rational Zero Theorem: ±(factors of a0) / (factors of an). Factor completely to uncover imaginary complex roots.',
-    'M6.1': 'Rational domain: set denominator ≠ 0. Non-canceling factors yield vertical asymptotes x = c.',
-    'M6.2': 'Removable holes: factor both numerator and denominator; canceled factors give hole coordinates (c, f_reduced(c)).',
-    'M6.3': 'Slant asymptote: if degree(num) = degree(denom) + 1, use polynomial long division. The linear quotient is the slant asymptote line y = mx + b.',
-    'M6.4': 'Rational equations: multiply all terms by LCD to clear denominators. Always check against original restrictions to discard extraneous roots.',
-    'M6.5': 'Inverse functions: swap x and y and isolate y. For radical equations, square both sides and check for extraneous solutions.',
-    'M7.1': 'Practice point mapping (x, y) ➔ (x, y + k). Vertical shifts only affect y-values, not x.',
-    'M7.2': 'Remember: f(x - h) shifts RIGHT h units, f(x + h) shifts LEFT h units. The sign inside is inverted.',
-    'M7.7': "Use x' = x/b + h and y' = a·y + k. Factor the argument inside first to identify b and h accurately.",
-    'M7.8': 'Compute f(-x) completely before comparing. A lone constant term or mixed powers usually breaks symmetry.',
-    'M7.9': 'Domain responds to horizontal shifts/scalings only; Range responds to vertical stretch and shifts.',
-    'M7.6': 'Transformations order: horizontal shift ➔ horizontal scale ➔ reflection ➔ vertical scale ➔ vertical shift.',
-    'M8.3': 'Plot anchor points at exponent -1, 0, and 1. Asymptote is always y = 0 for the basic parent form.',
-    'M8.4': 'Only the vertical shift k moves the horizontal asymptote: new HA is y = k.',
-    'M8.7': 'Take ln of both sides, bring powers out with power rule, and distribute thoroughly before isolating x.',
-    'M8.8': 'Identify n accurately: annual n=1, monthly n=12, daily n=365. For continuous growth, use A = Pe^(rt).',
-    'M8.9': 'Half-life decay model: Q(t) = Q₀(1/2)^(t/h). Rate constant k = -ln(2) / h.',
-    'M8.10': 'Change of base: argument on top, base on bottom: log_b(a) = ln(a) / ln(b).',
-    'M9.1': 'Fundamental definition: log_b(x) = y ⟺ b^y = x. "Base stays the base, other two swap."',
-    'M9.2': 'Express both the argument and base as powers of the same number: log_b(b^p) = p.',
-    'M9.8': 'Vertical asymptote is at argument = 0: x = h. Domain is x > h. x-intercept is where argument = 1.',
-    'M9.11': 'Expanding: move power rule exponents LAST. Numerator gets +, denominator gets -.',
-    'M9.13': 'Condensing: move coefficients to exponents FIRST. Group + in numerator, - in denominator.',
-    'M9.14': 'Isolate log term, convert to exponential form, solve, and check argument > 0.',
-    'M9.15': 'Always check candidate roots in original equations; discard any root that produces a non-positive argument.',
-    'M9.16': 'Each step of 1 on the Richter or Decibel scale is an order of magnitude (10^x factor difference).',
-  };
-
   // Guided Statistics
-  let totalSteps = 0;
-  let correctSteps = 0;
-  let totalAttempts = 0;
-  let completedExamples = 0;
-  let totalExamples = 0;
+  const { totalSteps, correctSteps, totalAttempts, completedExamples, totalExamples, avgAttempts } = useMemo(() => {
+    let tSteps = 0;
+    let cSteps = 0;
+    let tAttempts = 0;
+    let cExamples = 0;
+    let tExamples = 0;
 
-  selectedMods.forEach((m) => {
-    (guidedData[m] || []).forEach((g) => {
-      totalExamples++;
-      const st = guidedState[g.id];
-      if (st?.complete) completedExamples++;
-      g.steps.forEach((_, sIdx) => {
-        totalSteps++;
-        const res = st?.stepResults[sIdx];
-        if (res) {
-          if (res.correct) correctSteps++;
-          totalAttempts += res.attempts || 1;
-        }
+    selectedMods.forEach((m) => {
+      (guidedData[m] || []).forEach((g) => {
+        tExamples++;
+        const st = guidedState[g.id];
+        if (st?.complete) cExamples++;
+        g.steps.forEach((_, sIdx) => {
+          tSteps++;
+          const res = st?.stepResults[sIdx];
+          if (res) {
+            if (res.correct) cSteps++;
+            tAttempts += res.attempts || 1;
+          }
+        });
       });
     });
-  });
 
-  const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
+    const aAttempts = cSteps > 0 ? (tAttempts / cSteps).toFixed(1) : '1.0';
+
+    return { totalSteps: tSteps, correctSteps: cSteps, totalAttempts: tAttempts, completedExamples: cExamples, totalExamples: tExamples, avgAttempts: aAttempts };
+  }, [selectedMods, guidedData, guidedState]);
 
   // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
-        const res = practiceResults[q.id];
-        if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
-        }
-      });
+  const gaps = useMemo(() => {
+    const computedGaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
+    selectedMods.forEach((m) => {
+      const errorCountByMs: Record<string, number> = {};
+      practiceProblems
+        .filter((q) => q.mod === m)
+        .forEach((q) => {
+          const res = practiceResults[q.id];
+          if (res && res.points < 2) {
+            errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
+          }
+        });
 
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
-        ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
+      Object.entries(errorCountByMs).forEach(([ms, count]) => {
+        computedGaps.push({
+          mod: m,
+          ms,
+          errors: count,
+          priority: count >= 2 ? 'high' : 'medium',
+        });
       });
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    computedGaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    return computedGaps;
+  }, [selectedMods, practiceProblems, practiceResults]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);
@@ -139,12 +146,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     } catch (e) {}
   };
 
-  const filteredReviewList = practiceProblems.filter((p) => {
-    const res = practiceResults[p.id];
-    if (filterReview === 'missed') return res && res.points < 2;
-    if (filterReview === 'correct') return res && res.points === 2;
-    return true;
-  });
+  const filteredReviewList = useMemo(() => {
+    return practiceProblems.filter((p) => {
+      const res = practiceResults[p.id];
+      if (filterReview === 'missed') return res && res.points < 2;
+      if (filterReview === 'correct') return res && res.points === 2;
+      return true;
+    });
+  }, [practiceProblems, practiceResults, filterReview]);
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 animate-fadeIn">
@@ -156,10 +165,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         {/* Grade Circle */}
         <div
           className={`w-32 h-32 mx-auto mb-6 rounded-full border-4 flex flex-col items-center justify-center shadow-xl ${
-            gradeColors[grade].ring
-          } ${gradeColors[grade].bg}`}
+            GRADE_COLORS[grade].ring
+          } ${GRADE_COLORS[grade].bg}`}
         >
-          <span className={`text-4xl font-black ${gradeColors[grade].text}`}>{pct}%</span>
+          <span className={`text-4xl font-black ${GRADE_COLORS[grade].text}`}>{pct}%</span>
           <span className="text-xs font-bold text-slate-300">Grade {grade}</span>
           <span className="text-[10px] text-slate-400">{earnedPts} / {maxPts} pts</span>
         </div>
@@ -309,7 +318,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             {gaps.map((gap, idx) => {
               const msInfo = MICRO_SKILLS[gap.ms];
               const advice =
-                adviceMap[gap.ms] ||
+                ADVICE_MAP[gap.ms] ||
                 'Review the guided example for this skill and re-attempt the problem.';
               return (
                 <div
