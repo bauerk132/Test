@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface FunctionVisualizerProps {
   type?: 'parabola_shift' | 'exp_growth' | 'exp_decay' | 'log_curve' | 'cubic_symm' | 'rational_curve';
@@ -6,130 +6,149 @@ interface FunctionVisualizerProps {
   color?: string;
 }
 
-export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = ({
+// 300x180 SVG canvas coordinate mapping
+const width = 320;
+const height = 180;
+const cx = width / 2;
+const cy = height / 2;
+const scale = 14;
+
+const toSvgX = (x: number) => cx + x * scale;
+const toSvgY = (y: number) => cy - y * scale;
+
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent components update unrelated state
+export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = React.memo(({
   type = 'parabola_shift',
   title,
   color = '#8b5cf6',
 }) => {
-  // 300x180 SVG canvas coordinate mapping
-  const width = 320;
-  const height = 180;
-  const cx = width / 2;
-  const cy = height / 2;
-  const scale = 14;
+  // ⚡ Bolt: Wrapped heavy string concatenation and math loops in useMemo to avoid recalculating paths every render
+  const {
+    parentPath,
+    transformedPath,
+    asymptotePath,
+    asymptoteLabel,
+    parentLabel,
+    transformedLabel
+  } = useMemo(() => {
+    let parentPath = '';
+    let transformedPath = '';
+    let asymptotePath = '';
+    let asymptoteLabel = '';
+    let parentLabel = 'Parent f(x)';
+    let transformedLabel = 'g(x)';
 
-  const toSvgX = (x: number) => cx + x * scale;
-  const toSvgY = (y: number) => cy - y * scale;
+    if (type === 'parabola_shift') {
+      parentLabel = 'f(x) = x²';
+      transformedLabel = 'g(x) = x² - 5';
+      // parent x^2
+      const pPoints: string[] = [];
+      for (let x = -4; x <= 4; x += 0.2) {
+        const y = x * x;
+        pPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      }
+      parentPath = 'M ' + pPoints.join(' L ');
 
-  // Generate paths based on type
-  let parentPath = '';
-  let transformedPath = '';
-  let asymptotePath = '';
-  let asymptoteLabel = '';
-  let parentLabel = 'Parent f(x)';
-  let transformedLabel = 'g(x)';
-
-  if (type === 'parabola_shift') {
-    parentLabel = 'f(x) = x²';
-    transformedLabel = 'g(x) = x² - 5';
-    // parent x^2
-    const pPoints: string[] = [];
-    for (let x = -4; x <= 4; x += 0.2) {
-      const y = x * x;
-      pPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-    }
-    parentPath = 'M ' + pPoints.join(' L ');
-
-    // transformed x^2 - 5
-    const tPoints: string[] = [];
-    for (let x = -4.5; x <= 4.5; x += 0.2) {
-      const y = x * x - 5;
-      tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-    }
-    transformedPath = 'M ' + tPoints.join(' L ');
-  } else if (type === 'exp_growth') {
-    parentLabel = 'f(x) = 2^x';
-    transformedLabel = 'g(x) = 2^(x-1) - 4';
-    asymptotePath = `M 0,${toSvgY(-4)} L ${width},${toSvgY(-4)}`;
-    asymptoteLabel = 'HA: y = -4';
-
-    const pPoints: string[] = [];
-    for (let x = -8; x <= 3.5; x += 0.25) {
-      const y = Math.pow(2, x);
-      pPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-    }
-    parentPath = 'M ' + pPoints.join(' L ');
-
-    const tPoints: string[] = [];
-    for (let x = -8; x <= 4.5; x += 0.25) {
-      const y = Math.pow(2, x - 1) - 4;
-      if (y < 7 && y > -6) {
+      // transformed x^2 - 5
+      const tPoints: string[] = [];
+      for (let x = -4.5; x <= 4.5; x += 0.2) {
+        const y = x * x - 5;
         tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
       }
-    }
-    transformedPath = 'M ' + tPoints.join(' L ');
-  } else if (type === 'exp_decay') {
-    parentLabel = 'Q(t) = Q₀(1/2)^t';
-    transformedLabel = 'Decay Curve';
-    asymptotePath = `M 0,${toSvgY(0)} L ${width},${toSvgY(0)}`;
-    asymptoteLabel = 'HA: y = 0';
+      transformedPath = 'M ' + tPoints.join(' L ');
+    } else if (type === 'exp_growth') {
+      parentLabel = 'f(x) = 2^x';
+      transformedLabel = 'g(x) = 2^(x-1) - 4';
+      asymptotePath = `M 0,${toSvgY(-4)} L ${width},${toSvgY(-4)}`;
+      asymptoteLabel = 'HA: y = -4';
 
-    const tPoints: string[] = [];
-    for (let x = 0; x <= 8; x += 0.2) {
-      const y = 5 * Math.pow(0.5, x / 2);
-      tPoints.push(`${toSvgX(x - 2).toFixed(1)},${toSvgY(y).toFixed(1)}`);
-    }
-    transformedPath = 'M ' + tPoints.join(' L ');
-  } else if (type === 'log_curve') {
-    parentLabel = 'f(x) = log₂(x)';
-    transformedLabel = 'g(x) = log₂(x - 3) + 1';
-    const vaX = toSvgX(3);
-    asymptotePath = `M ${vaX},0 L ${vaX},${height}`;
-    asymptoteLabel = 'VA: x = 3';
+      const pPoints: string[] = [];
+      for (let x = -8; x <= 3.5; x += 0.25) {
+        const y = Math.pow(2, x);
+        pPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      }
+      parentPath = 'M ' + pPoints.join(' L ');
 
-    const tPoints: string[] = [];
-    for (let x = 3.05; x <= 9; x += 0.15) {
-      const y = Math.log2(x - 3) + 1;
-      if (y > -6 && y < 6) {
-        tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      const tPoints: string[] = [];
+      for (let x = -8; x <= 4.5; x += 0.25) {
+        const y = Math.pow(2, x - 1) - 4;
+        if (y < 7 && y > -6) {
+          tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
       }
-    }
-    transformedPath = 'M ' + tPoints.join(' L ');
-  } else if (type === 'cubic_symm') {
-    parentLabel = 'f(x) = x³ - 4x';
-    transformedLabel = 'Odd 180° Rotational Symmetry';
+      transformedPath = 'M ' + tPoints.join(' L ');
+    } else if (type === 'exp_decay') {
+      parentLabel = 'Q(t) = Q₀(1/2)^t';
+      transformedLabel = 'Decay Curve';
+      asymptotePath = `M 0,${toSvgY(0)} L ${width},${toSvgY(0)}`;
+      asymptoteLabel = 'HA: y = 0';
 
-    const tPoints: string[] = [];
-    for (let x = -3; x <= 3; x += 0.15) {
-      const y = x * x * x - 4 * x;
-      if (Math.abs(y) <= 7) {
-        tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      const tPoints: string[] = [];
+      for (let x = 0; x <= 8; x += 0.2) {
+        const y = 5 * Math.pow(0.5, x / 2);
+        tPoints.push(`${toSvgX(x - 2).toFixed(1)},${toSvgY(y).toFixed(1)}`);
       }
-    }
-    transformedPath = 'M ' + tPoints.join(' L ');
-  } else if (type === 'rational_curve') {
-    parentLabel = 'Vertical Asymptote x = 2';
-    transformedLabel = 'f(x) = (2x + 1)/(x - 2)';
-    asymptotePath = `M ${toSvgX(2)} 0 L ${toSvgX(2)} ${height}`;
-    asymptoteLabel = 'VA: x = 2';
+      transformedPath = 'M ' + tPoints.join(' L ');
+    } else if (type === 'log_curve') {
+      parentLabel = 'f(x) = log₂(x)';
+      transformedLabel = 'g(x) = log₂(x - 3) + 1';
+      const vaX = toSvgX(3);
+      asymptotePath = `M ${vaX},0 L ${vaX},${height}`;
+      asymptoteLabel = 'VA: x = 3';
 
-    const leftBranch: string[] = [];
-    for (let x = -8; x < 1.8; x += 0.2) {
-      const y = (2 * x + 1) / (x - 2);
-      if (Math.abs(y) <= 8) {
-        leftBranch.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      const tPoints: string[] = [];
+      for (let x = 3.05; x <= 9; x += 0.15) {
+        const y = Math.log2(x - 3) + 1;
+        if (y > -6 && y < 6) {
+          tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
       }
-    }
-    const rightBranch: string[] = [];
-    for (let x = 2.2; x <= 8; x += 0.2) {
-      const y = (2 * x + 1) / (x - 2);
-      if (Math.abs(y) <= 8) {
-        rightBranch.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+      transformedPath = 'M ' + tPoints.join(' L ');
+    } else if (type === 'cubic_symm') {
+      parentLabel = 'f(x) = x³ - 4x';
+      transformedLabel = 'Odd 180° Rotational Symmetry';
+
+      const tPoints: string[] = [];
+      for (let x = -3; x <= 3; x += 0.15) {
+        const y = x * x * x - 4 * x;
+        if (Math.abs(y) <= 7) {
+          tPoints.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
       }
+      transformedPath = 'M ' + tPoints.join(' L ');
+    } else if (type === 'rational_curve') {
+      parentLabel = 'Vertical Asymptote x = 2';
+      transformedLabel = 'f(x) = (2x + 1)/(x - 2)';
+      asymptotePath = `M ${toSvgX(2)} 0 L ${toSvgX(2)} ${height}`;
+      asymptoteLabel = 'VA: x = 2';
+
+      const leftBranch: string[] = [];
+      for (let x = -8; x < 1.8; x += 0.2) {
+        const y = (2 * x + 1) / (x - 2);
+        if (Math.abs(y) <= 8) {
+          leftBranch.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
+      }
+      const rightBranch: string[] = [];
+      for (let x = 2.2; x <= 8; x += 0.2) {
+        const y = (2 * x + 1) / (x - 2);
+        if (Math.abs(y) <= 8) {
+          rightBranch.push(`${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`);
+        }
+      }
+      transformedPath = (leftBranch.length > 0 ? 'M ' + leftBranch.join(' L ') : '') +
+        (rightBranch.length > 0 ? ' M ' + rightBranch.join(' L ') : '');
     }
-    transformedPath = (leftBranch.length > 0 ? 'M ' + leftBranch.join(' L ') : '') +
-      (rightBranch.length > 0 ? ' M ' + rightBranch.join(' L ') : '');
-  }
+
+    return {
+      parentPath,
+      transformedPath,
+      asymptotePath,
+      asymptoteLabel,
+      parentLabel,
+      transformedLabel
+    };
+  }, [type]);
 
   return (
     <div className="my-3 rounded-xl border border-slate-800 bg-[#0d1017] p-3 text-xs">
@@ -222,4 +241,4 @@ export const FunctionVisualizer: React.FC<FunctionVisualizerProps> = ({
       </div>
     </div>
   );
-};
+});
