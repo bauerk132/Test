@@ -1,0 +1,19 @@
+# Installed INSIDE the SageMaker training container by launch/launch_job.py.
+# These exact versions were resolved together by pip on 2026-09-29 (Python 3.12 target).
+# transformers 5.x is required by Qwen3.5; Unsloth 2026.9.12 accepts it.
+#
+# If a job fails at "Installing requirements", read that CloudWatch line first. The usual causes:
+#   * "CUDA driver version is insufficient"  -> torch got upgraded past what the instance driver
+#     supports. Add a line `torch==2.8.0` (the version the container ships) and re-run the smoke test.
+#   * a resolver conflict message -> Unsloth moved its pins; bump the versions below together.
+unsloth==2026.9.12
+unsloth_zoo==2026.9.8
+transformers==5.5.0
+trl==0.24.0
+peft==0.21.1
+accelerate==1.15.0
+bitsandbytes==0.50.2
+datasets==4.3.0
+# Qwen3.5 mixes Gated-DeltaNet layers with normal attention. This library gives the fast kernel path;
+# without it transformers warns "fast path is not available" and falls back to slow PyTorch code.
+flash-linear-attention==0.5.2
