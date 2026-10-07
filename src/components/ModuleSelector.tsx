@@ -145,7 +145,8 @@ const MODULES_META: ModMeta[] = [
   },
 ];
 
-export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
+// ⚡ Bolt: Wrapped ModuleSelector in React.memo to prevent it from unnecessarily re-rendering on unrelated state changes in App.tsx
+export const ModuleSelector: React.FC<ModuleSelectorProps> = React.memo(({
   selectedMods,
   onToggleMod,
   onSelectPreset,
@@ -373,4 +374,4 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
       </div>
     </div>
   );
-};
+});

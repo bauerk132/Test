@@ -17,7 +17,58 @@ interface ResultsViewProps {
   onOpenGithub: () => void;
 }
 
-export const ResultsView: React.FC<ResultsViewProps> = ({
+// ⚡ Bolt: Moved gradeColors and adviceMap out of ResultsView to prevent recreation on every render
+const gradeColors: Record<string, { ring: string; text: string; bg: string }> = {
+  A: { ring: 'border-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  B: { ring: 'border-teal-500', text: 'text-teal-400', bg: 'bg-teal-500/10' },
+  C: { ring: 'border-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
+  D: { ring: 'border-rose-400', text: 'text-rose-400', bg: 'bg-rose-500/10' },
+  F: { ring: 'border-rose-600', text: 'text-rose-500', bg: 'bg-rose-500/10' },
+};
+
+const adviceMap: Record<string, string> = {
+  'M5.1': 'Parabola vertex: h = -b/(2a), k = f(h). Vertex is maximum if a < 0 and minimum if a > 0.',
+  'M5.2': 'Leading term test: an · xⁿ determines end behavior. Odd degree ➔ opposite ends; Even degree ➔ same direction.',
+  'M5.3': 'Multiplicity rule: Even multiplicity touches axis and turns around; Odd multiplicity crosses the axis.',
+  'M5.4': 'Synthetic division: Use divisor c for (x - c). Remember to insert 0 for missing degree terms.',
+  'M5.5': 'Rational Zero Theorem: ±(factors of a0) / (factors of an). Factor completely to uncover imaginary complex roots.',
+  'M6.1': 'Rational domain: set denominator ≠ 0. Non-canceling factors yield vertical asymptotes x = c.',
+  'M6.2': 'Removable holes: factor both numerator and denominator; canceled factors give hole coordinates (c, f_reduced(c)).',
+  'M6.3': 'Slant asymptote: if degree(num) = degree(denom) + 1, use polynomial long division. The linear quotient is the slant asymptote line y = mx + b.',
+  'M6.4': 'Rational equations: multiply all terms by LCD to clear denominators. Always check against original restrictions to discard extraneous roots.',
+  'M6.5': 'Inverse functions: swap x and y and isolate y. For radical equations, square both sides and check for extraneous solutions.',
+  'M7.1': 'Practice point mapping (x, y) ➔ (x, y + k). Vertical shifts only affect y-values, not x.',
+  'M7.2': 'Remember: f(x - h) shifts RIGHT h units, f(x + h) shifts LEFT h units. The sign inside is inverted.',
+  'M7.7': "Use x' = x/b + h and y' = a·y + k. Factor the argument inside first to identify b and h accurately.",
+  'M7.8': 'Compute f(-x) completely before comparing. A lone constant term or mixed powers usually breaks symmetry.',
+  'M7.9': 'Domain responds to horizontal shifts/scalings only; Range responds to vertical stretch and shifts.',
+  'M7.6': 'Transformations order: horizontal shift ➔ horizontal scale ➔ reflection ➔ vertical scale ➔ vertical shift.',
+  'M8.3': 'Plot anchor points at exponent -1, 0, and 1. Asymptote is always y = 0 for the basic parent form.',
+  'M8.4': 'Only the vertical shift k moves the horizontal asymptote: new HA is y = k.',
+  'M8.7': 'Take ln of both sides, bring powers out with power rule, and distribute thoroughly before isolating x.',
+  'M8.8': 'Identify n accurately: annual n=1, monthly n=12, daily n=365. For continuous growth, use A = Pe^(rt).',
+  'M8.9': 'Half-life decay model: Q(t) = Q₀(1/2)^(t/h). Rate constant k = -ln(2) / h.',
+  'M8.10': 'Change of base: argument on top, base on bottom: log_b(a) = ln(a) / ln(b).',
+  'M9.1': 'Fundamental definition: log_b(x) = y ⟺ b^y = x. "Base stays the base, other two swap."',
+  'M9.2': 'Express both the argument and base as powers of the same number: log_b(b^p) = p.',
+  'M9.8': 'Vertical asymptote is at argument = 0: x = h. Domain is x > h. x-intercept is where argument = 1.',
+  'M9.11': 'Expanding: move power rule exponents LAST. Numerator gets +, denominator gets -.',
+  'M9.13': 'Condensing: move coefficients to exponents FIRST. Group + in numerator, - in denominator.',
+  'M9.14': 'Isolate log term, convert to exponential form, solve, and check argument > 0.',
+  'M9.15': 'Always check candidate roots in original equations; discard any root that produces a non-positive argument.',
+  'M9.16': 'Each step of 1 on the Richter or Decibel scale is an order of magnitude (10^x factor difference).',
+};
+
+const modNames: Record<number, { name: string; emoji: string }> = {
+  5: { name: 'Polynomial Functions', emoji: '📐' },
+  6: { name: 'Rational Functions', emoji: '⚡' },
+  7: { name: 'Transformations', emoji: '🔄' },
+  8: { name: 'Exponentials', emoji: '📈' },
+  9: { name: 'Logarithms', emoji: '🧮' },
+};
+
+// ⚡ Bolt: Wrapped ResultsView in React.memo to prevent it from unnecessarily re-rendering on unrelated state changes in App.tsx
+export const ResultsView: React.FC<ResultsViewProps> = React.memo(({
   selectedMods,
   earnedPts,
   maxPts,
@@ -37,46 +88,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const grade =
     pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
 
-  const gradeColors: Record<string, { ring: string; text: string; bg: string }> = {
-    A: { ring: 'border-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    B: { ring: 'border-teal-500', text: 'text-teal-400', bg: 'bg-teal-500/10' },
-    C: { ring: 'border-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
-    D: { ring: 'border-rose-400', text: 'text-rose-400', bg: 'bg-rose-500/10' },
-    F: { ring: 'border-rose-600', text: 'text-rose-500', bg: 'bg-rose-500/10' },
-  };
-
-  const adviceMap: Record<string, string> = {
-    'M5.1': 'Parabola vertex: h = -b/(2a), k = f(h). Vertex is maximum if a < 0 and minimum if a > 0.',
-    'M5.2': 'Leading term test: an · xⁿ determines end behavior. Odd degree ➔ opposite ends; Even degree ➔ same direction.',
-    'M5.3': 'Multiplicity rule: Even multiplicity touches axis and turns around; Odd multiplicity crosses the axis.',
-    'M5.4': 'Synthetic division: Use divisor c for (x - c). Remember to insert 0 for missing degree terms.',
-    'M5.5': 'Rational Zero Theorem: ±(factors of a0) / (factors of an). Factor completely to uncover imaginary complex roots.',
-    'M6.1': 'Rational domain: set denominator ≠ 0. Non-canceling factors yield vertical asymptotes x = c.',
-    'M6.2': 'Removable holes: factor both numerator and denominator; canceled factors give hole coordinates (c, f_reduced(c)).',
-    'M6.3': 'Slant asymptote: if degree(num) = degree(denom) + 1, use polynomial long division. The linear quotient is the slant asymptote line y = mx + b.',
-    'M6.4': 'Rational equations: multiply all terms by LCD to clear denominators. Always check against original restrictions to discard extraneous roots.',
-    'M6.5': 'Inverse functions: swap x and y and isolate y. For radical equations, square both sides and check for extraneous solutions.',
-    'M7.1': 'Practice point mapping (x, y) ➔ (x, y + k). Vertical shifts only affect y-values, not x.',
-    'M7.2': 'Remember: f(x - h) shifts RIGHT h units, f(x + h) shifts LEFT h units. The sign inside is inverted.',
-    'M7.7': "Use x' = x/b + h and y' = a·y + k. Factor the argument inside first to identify b and h accurately.",
-    'M7.8': 'Compute f(-x) completely before comparing. A lone constant term or mixed powers usually breaks symmetry.',
-    'M7.9': 'Domain responds to horizontal shifts/scalings only; Range responds to vertical stretch and shifts.',
-    'M7.6': 'Transformations order: horizontal shift ➔ horizontal scale ➔ reflection ➔ vertical scale ➔ vertical shift.',
-    'M8.3': 'Plot anchor points at exponent -1, 0, and 1. Asymptote is always y = 0 for the basic parent form.',
-    'M8.4': 'Only the vertical shift k moves the horizontal asymptote: new HA is y = k.',
-    'M8.7': 'Take ln of both sides, bring powers out with power rule, and distribute thoroughly before isolating x.',
-    'M8.8': 'Identify n accurately: annual n=1, monthly n=12, daily n=365. For continuous growth, use A = Pe^(rt).',
-    'M8.9': 'Half-life decay model: Q(t) = Q₀(1/2)^(t/h). Rate constant k = -ln(2) / h.',
-    'M8.10': 'Change of base: argument on top, base on bottom: log_b(a) = ln(a) / ln(b).',
-    'M9.1': 'Fundamental definition: log_b(x) = y ⟺ b^y = x. "Base stays the base, other two swap."',
-    'M9.2': 'Express both the argument and base as powers of the same number: log_b(b^p) = p.',
-    'M9.8': 'Vertical asymptote is at argument = 0: x = h. Domain is x > h. x-intercept is where argument = 1.',
-    'M9.11': 'Expanding: move power rule exponents LAST. Numerator gets +, denominator gets -.',
-    'M9.13': 'Condensing: move coefficients to exponents FIRST. Group + in numerator, - in denominator.',
-    'M9.14': 'Isolate log term, convert to exponential form, solve, and check argument > 0.',
-    'M9.15': 'Always check candidate roots in original equations; discard any root that produces a non-positive argument.',
-    'M9.16': 'Each step of 1 on the Richter or Decibel scale is an order of magnitude (10^x factor difference).',
-  };
 
   // Guided Statistics
   let totalSteps = 0;
@@ -528,4 +539,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       )}
     </div>
   );
-};
+});
