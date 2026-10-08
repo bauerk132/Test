@@ -16,7 +16,9 @@ const scale = 18;
 const toSvgX = (xVal: number) => cx + xVal * scale;
 const toSvgY = (yVal: number) => cy - yVal * scale;
 
-export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = ({
+// ⚡ Bolt: Wrapped InteractiveSandboxModal in React.memo to prevent it from re-rendering
+// on every global timer tick when closed (or when open, if props haven't changed).
+export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -315,4 +317,4 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
       </div>
     </div>
   );
-};
+});
