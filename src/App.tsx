@@ -16,6 +16,14 @@ import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 import { GuidedExample } from './types';
 
+// ⚡ Bolt: Extracted default guided progress outside component to prevent memoization leaks
+// Re-creating this object on every render tick breaks React.memo for GuidedCard components.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 // Precompute a flat map of guided examples for O(1) lookups
 const guidedExampleMap = new Map<string, GuidedExample>();
 for (const modId in GUIDED) {
@@ -96,6 +104,17 @@ export default function App() {
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
 
+  // ⚡ Bolt: Wrapped modal open/close handlers in useCallback to prevent child re-renders (e.g. Header)
+  // on every timer tick.
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleCloseFormulas = useCallback(() => setIsFormulaOpen(false), []);
+  const handleToggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
+
   // Timer Effect
   useEffect(() => {
     if (isTimerRunning) {
@@ -126,11 +145,7 @@ export default function App() {
     const initGuided: Record<string, GuidedProgress> = {};
     selectedMods.forEach((m) => {
       (GUIDED[m] || []).forEach((g) => {
-        initGuided[g.id] = {
-          currentStep: 0,
-          stepResults: [],
-          complete: false,
-        };
+        initGuided[g.id] = { ...DEFAULT_GUIDED_PROGRESS };
       });
     });
     setGuidedState(initGuided);
@@ -446,11 +461,11 @@ export default function App() {
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -583,11 +598,7 @@ export default function App() {
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
                             progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
+                              guidedState[g.id] || DEFAULT_GUIDED_PROGRESS
                             }
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
@@ -700,19 +711,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormulas}
       />
     </div>
   );
