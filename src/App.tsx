@@ -110,17 +110,18 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  // ⚡ Bolt: Wrapped top-level state updaters in useCallback to prevent child component re-renders on timer tick
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -138,7 +139,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -257,7 +258,7 @@ export default function App() {
   }, []);
 
   // Bulk shuffle all problems in a module with new algorithmic variants
-  const handleShuffleModuleVariants = (modId: ModuleId) => {
+  const handleShuffleModuleVariants = useCallback((modId: ModuleId) => {
     const problems = UNIFIED_EXAM_QUESTIONS[modId] || [];
     const updatedVariants = { ...problemVariants };
     const updatedCounters = { ...variantCounters };
@@ -277,7 +278,7 @@ export default function App() {
     setVariantCounters(updatedCounters);
     setUserAnswers(updatedAnswers);
     setUserWork(updatedWork);
-  };
+  }, [problemVariants, variantCounters, userAnswers, userWork]);
 
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
@@ -328,7 +329,7 @@ export default function App() {
     );
   }, [selectedMods, problemVariants]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     setIsTimerRunning(false);
     setIsGraded(true);
 
@@ -356,9 +357,9 @@ export default function App() {
         origin: { y: 0.6 },
       });
     } catch (e) {}
-  };
+  }, [activeProblems, userAnswers, userWork]); // ⚡ Bolt: gradeSingleProblem is stable
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -367,7 +368,7 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Progress Calculations
   const {
@@ -433,13 +434,13 @@ export default function App() {
     return { earnedPts: earned, maxPts: max, modScores: scores };
   }, [activeProblems, selectedMods, practiceResults]);
 
-  const scrollToAnchor = (mod: ModuleId) => {
+  const scrollToAnchor = useCallback((mod: ModuleId) => {
     setActiveTab(mod);
     const el = document.getElementById(`mod-section-${mod}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">

@@ -17,7 +17,8 @@ interface ResultsViewProps {
   onOpenGithub: () => void;
 }
 
-export const ResultsView: React.FC<ResultsViewProps> = ({
+// ⚡ Bolt: Wrapped ResultsView in React.memo to prevent unnecessary re-renders when global states (like timer) update
+export const ResultsView: React.FC<ResultsViewProps> = React.memo(({
   selectedMods,
   earnedPts,
   maxPts,
@@ -528,4 +529,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       )}
     </div>
   );
-};
+});
