@@ -25,3 +25,4 @@ Read that page and the files it lists, nothing else. Before you start and before
 6. No secrets in the repo. No model names in commits or files.
 7. Node built-ins plus `express` only. Tests use `node --test`.
 8. Frugal: pin each tool's model, keep a spending cap on the API key, and never scan the whole repo.
+9. Edit times (manual Started/Done on each card) is a required feature. Never remove it from `public/index.html`. `test/edit-times.test.js` guards it.
