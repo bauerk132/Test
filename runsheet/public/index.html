@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Run Sheet</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
@@ -280,6 +281,16 @@
     color: var(--ink);
   }
   .note::placeholder { color: var(--ink-soft); }
+  /* Edit times: fix a Started/Done tap that was late or forgotten */
+  .b-edit { justify-self: start; min-height: 44px; font-size: 13px; padding-inline: 14px; }
+  .b-edit[aria-expanded="true"] { background: var(--route-soft); color: var(--route); }
+  .edit-times { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--route); border-radius: 12px; background: var(--route-soft); }
+  .edit-times .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .edit-times label { display: grid; gap: 4px; flex: 1 1 120px; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+  .time-in { font: inherit; font-size: 16px; width: 100%; min-height: 44px; padding: 6px 8px; border-radius: 12px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); }
+  .edit-times .row button { flex: 1 1 100px; min-height: 44px; }
+  .edit-times .err { margin: 0; color: var(--late); font-weight: 600; font-size: 14px; }
+  .edit-times .err:empty { display: none; }
   .legend { margin-top: 24px; font-size: 14px; color: var(--ink-soft); display: grid; gap: 6px; padding-left: 80px; }
   .legend .sq { display: inline-block; width: 12px; height: 12px; border: 3px solid var(--fixed); border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
   .legend .ci { display: inline-block; width: 12px; height: 12px; border: 3px solid var(--route); border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
@@ -427,6 +438,8 @@
   var docRef = null;
   var writeChain = Promise.resolve();
   var pendingRender = false;
+  var editingId = null;    // block whose "Edit times" panel is open
+  var editDraft = null;    // {s, d} typed but not saved yet, so a re-render keeps it
 
   function todayKey() {
     try {
@@ -594,6 +607,38 @@
     save();
     renderAverages();
   }
+  // "08:45" <-> 525 minutes since midnight (what <input type="time"> uses).
+  function toHHMM(m) {
+    if (typeof m !== "number") return "";
+    m = ((Math.round(m) % 1440) + 1440) % 1440;
+    var h = Math.floor(m / 60), mm = m % 60;
+    return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm;
+  }
+  function fromHHMM(v) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(v || "");
+    if (!m) return null;
+    var h = +m[1], mi = +m[2];
+    return h > 23 || mi > 59 ? null : h * 60 + mi;
+  }
+  // Manual fix for a late or forgotten tap. Returns an error message, or null when saved.
+  function setTimes(b, startMin, doneMin) {
+    // Only Done given: assume it ran its planned length.
+    if (startMin == null && doneMin != null) startMin = Math.max(0, doneMin - planDur(b));
+    if (startMin != null && doneMin != null && doneMin < startMin) return "Done can't be before Started.";
+    var e = Object.assign({}, entry(b.id));
+    if (startMin != null) e.startedAt = startMin; else delete e.startedAt;
+    if (doneMin != null) e.doneAt = doneMin; else delete e.doneAt;
+    if (doneMin != null) e.status = "done";
+    else if (startMin != null) e.status = "started";
+    else if (e.status !== "skipped") delete e.status;
+    if (startMin != null || doneMin != null) e.edited = true; else delete e.edited;
+    stamp(e, b, startMin != null ? startMin : nowMin(), false);
+    state[b.id] = e;
+    editingId = null; editDraft = null;
+    save();
+    render();
+    return null;
+  }
 
   // ---------- derived ----------
   function currentDrift() {
@@ -607,7 +652,7 @@
   // ---------- render ----------
   function render() {
     var active = document.activeElement;
-    if (active && active.classList && active.classList.contains("note")) { pendingRender = true; return; }
+    if (active && active.classList && (active.classList.contains("note") || active.classList.contains("time-in"))) { pendingRender = true; return; }
     pendingRender = false;
     var wd = weekday();
     document.getElementById("day-title").textContent = (wd ? wd + " " : "") + "Run Sheet";
@@ -701,6 +746,7 @@
     if (typeof e.startedAt === "number") log.push("started " + fmt(e.startedAt));
     if (typeof e.doneAt === "number") log.push("done " + fmt(e.doneAt));
     if (typeof e.startedAt === "number" && typeof e.doneAt === "number") log.push("took " + dur(e.doneAt - e.startedAt) + " (planned " + dur(planDur(b)) + ")");
+    if (e.edited && log.length) log.push("edited");
     if (log.length) {
       var l = document.createElement("div");
       l.className = "mono";
@@ -727,12 +773,63 @@
     card.appendChild(head);
     card.appendChild(meta);
     card.appendChild(actions);
+    var edit = btn("Edit times", "b-edit", false, function () {
+      if (editingId === b.id) { editingId = null; editDraft = null; render(); return; }
+      editingId = b.id;
+      editDraft = { s: toHHMM(e.startedAt), d: toHHMM(e.doneAt) };
+      render();
+      var f = document.getElementById("ts-" + b.id);
+      if (f) f.focus();
+    });
+    edit.removeAttribute("aria-pressed");
+    edit.setAttribute("aria-expanded", editingId === b.id ? "true" : "false");
+    card.appendChild(edit);
+    if (editingId === b.id) card.appendChild(timeEditor(b));
     card.appendChild(note);
 
     li.appendChild(time);
     li.appendChild(dot);
     li.appendChild(card);
     return li;
+  }
+  function timeEditor(b) {
+    var box = document.createElement("div");
+    box.className = "edit-times";
+    var row = document.createElement("div");
+    row.className = "row";
+    function field(label, id, key) {
+      var lab = document.createElement("label");
+      lab.textContent = label;
+      var inp = document.createElement("input");
+      inp.type = "time";
+      inp.className = "time-in";
+      inp.id = id;
+      inp.value = editDraft ? editDraft[key] : "";
+      inp.addEventListener("input", function () { if (editDraft) editDraft[key] = inp.value; });
+      lab.appendChild(inp);
+      row.appendChild(lab);
+      return inp;
+    }
+    var sIn = field("Started", "ts-" + b.id, "s");
+    var dIn = field("Done", "td-" + b.id, "d");
+    var err = document.createElement("p");
+    err.className = "err";
+    err.setAttribute("role", "alert");
+    var row2 = document.createElement("div");
+    row2.className = "row";
+    var saveB = btn("Save", "b-done", false, function () {
+      var msg = setTimes(b, fromHHMM(sIn.value), fromHHMM(dIn.value));
+      if (msg) err.textContent = msg;
+    });
+    saveB.removeAttribute("aria-pressed");
+    var cancelB = btn("Cancel", "b-cancel", false, function () { editingId = null; editDraft = null; render(); });
+    cancelB.removeAttribute("aria-pressed");
+    row2.appendChild(saveB);
+    row2.appendChild(cancelB);
+    box.appendChild(row);
+    box.appendChild(err);
+    box.appendChild(row2);
+    return box;
   }
   function tag(text, cls) {
     var s = document.createElement("span");
