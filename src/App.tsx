@@ -30,6 +30,42 @@ const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T
   return next;
 };
 
+const moduleHeaderInfo: Record<
+  ModuleId,
+  { title: string; subtitle: string; emoji: string; gradient: string }
+> = {
+  5: {
+    title: 'Polynomial & Power Functions',
+    subtitle: '5 Authentic Exam & Optimization Questions',
+    emoji: '📐',
+    gradient: 'from-blue-500 to-indigo-500',
+  },
+  6: {
+    title: 'Rational & Radical Functions',
+    subtitle: '5 Authentic Exam, Asymptote & Radical Questions',
+    emoji: '⚡',
+    gradient: 'from-cyan-400 to-blue-500',
+  },
+  7: {
+    title: 'Transformations & Symmetry',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '🔄',
+    gradient: 'from-purple-400 to-indigo-400',
+  },
+  8: {
+    title: 'Exponential Functions',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '📈',
+    gradient: 'from-emerald-400 to-teal-400',
+  },
+  9: {
+    title: 'Logarithmic Functions',
+    subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
+    emoji: '🧮',
+    gradient: 'from-amber-400 to-orange-400',
+  },
+};
+
 export default function App() {
   const [selectedMods, setSelectedMods] = useState<ModuleId[]>([5, 6, 7, 8, 9]);
   const [view, setView] = useState<'select' | 'learning' | 'results'>('select');
@@ -255,11 +291,10 @@ export default function App() {
 
   // Grade Practice / Test Problem
   const gradeSingleProblem = (
-    qId: string,
+    problem: PracticeProblem | null,
     rawAns: string,
     work: string
   ): { points: 0 | 1 | 2; status: 'correct' | 'partial' | 'wrong' } => {
-    const problem = findProblem(qId);
     if (!problem || !rawAns.trim()) return { points: 0, status: 'wrong' };
 
     const ansClean = rawAns.toLowerCase().replace(/\s/g, '');
@@ -301,7 +336,7 @@ export default function App() {
     activeProblems.forEach((q) => {
       const uAns = userAnswers[q.id] || '';
       const uWork = userWork[q.id] || '';
-      const graded = gradeSingleProblem(q.id, uAns, uWork);
+      const graded = gradeSingleProblem(q, uAns, uWork);
       results[q.id] = {
         points: graded.points,
         status: graded.status,
@@ -404,42 +439,6 @@ export default function App() {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
-
-  const moduleHeaderInfo: Record<
-    ModuleId,
-    { title: string; subtitle: string; emoji: string; gradient: string }
-  > = {
-    5: {
-      title: 'Polynomial & Power Functions',
-      subtitle: '5 Authentic Exam & Optimization Questions',
-      emoji: '📐',
-      gradient: 'from-blue-500 to-indigo-500',
-    },
-    6: {
-      title: 'Rational & Radical Functions',
-      subtitle: '5 Authentic Exam, Asymptote & Radical Questions',
-      emoji: '⚡',
-      gradient: 'from-cyan-400 to-blue-500',
-    },
-    7: {
-      title: 'Transformations & Symmetry',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '🔄',
-      gradient: 'from-purple-400 to-indigo-400',
-    },
-    8: {
-      title: 'Exponential Functions',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '📈',
-      gradient: 'from-emerald-400 to-teal-400',
-    },
-    9: {
-      title: 'Logarithmic Functions',
-      subtitle: '5 Interactive Walkthroughs + 10 Comprehensive Exam Questions',
-      emoji: '🧮',
-      gradient: 'from-amber-400 to-orange-400',
-    },
   };
 
   return (

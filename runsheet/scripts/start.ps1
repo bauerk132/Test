@@ -29,17 +29,33 @@ if (-not (Test-Path 'node_modules')) {
 }
 
 # Find the laptop's Wi-Fi address so the phone knows where to connect.
-# Skip loopback, link-local (169.254), and virtual adapters (WSL, VMs),
+# Skip loopback, link-local (169.254), and virtual adapters (WSL, VMs, VPNs),
 # because the phone cannot reach those.
 $candidates = @(Get-NetIPAddress -AddressFamily IPv4 |
     Where-Object {
         $_.IPAddress -notlike '127.*' -and
         $_.IPAddress -notlike '169.254.*' -and
-        $_.InterfaceAlias -notmatch 'vEthernet|WSL|Loopback|VirtualBox|VMware'
+        $_.InterfaceAlias -notmatch 'vEthernet|WSL|Loopback|VirtualBox|VMware|Tailscale|ZeroTier|NordLynx|TAP|Hyper-V'
     })
 
-# Prefer addresses handed out by the router (DHCP), which is normal home Wi-Fi.
-$best = $candidates | Where-Object { $_.PrefixOrigin -eq 'Dhcp' } | Select-Object -First 1
+# Prefer the adapter that has an IPv4 default gateway: that is the one on the
+# home network, even when a VPN or VM adds extra addresses. Fall back to the
+# old DHCP-first logic when nothing has a gateway.
+$gatewayed = @(Get-NetIPConfiguration |
+    Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
+    ForEach-Object { $_.IPv4Address.IPAddress })
+$best = $null
+foreach ($address in $gatewayed) {
+    $match = $candidates | Where-Object { $_.IPAddress -eq $address } | Select-Object -First 1
+    if ($match) {
+        $best = $match
+        break
+    }
+}
+if (-not $best) {
+    # No gateway adapter (or it was filtered above); prefer router-handed (DHCP) addresses.
+    $best = $candidates | Where-Object { $_.PrefixOrigin -eq 'Dhcp' } | Select-Object -First 1
+}
 if (-not $best) {
     $best = $candidates | Select-Object -First 1
 }
@@ -54,6 +70,18 @@ if ($best) {
 }
 Write-Host "  Stop: press Ctrl+C"
 Write-Host ""
+
+# A busy port gives a plain message instead of a Node crash dump, in both
+# real and dry runs. Suggest the next port up from the one that is taken.
+# NOTE: no "-State Listen" filter here. Node's listening sockets show up
+# under Get-NetTCPConnection with state Bound (raw 0) on this machine, so
+# filtering for Listen misses both the test listener and a real server.
+# Any socket on the port means it is taken.
+$listener = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+if ($listener) {
+    Write-Host "Port $Port is already in use (maybe Run Sheet is already running). Try: -Port $($Port + 1)"
+    exit 1
+}
 
 # Dry run only shows the addresses; it does not start the server.
 if ($DryRun) {

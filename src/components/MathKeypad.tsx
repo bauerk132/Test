@@ -17,7 +17,78 @@ interface KeyGroup {
   keys: { label: string; insert: string; desc?: string }[];
 }
 
-export const MathKeypad: React.FC<MathKeypadProps> = ({
+// Categorized buttons with rich high-contrast colors
+const keyGroups: KeyGroup[] = [
+  {
+    name: 'Powers & Roots',
+    badgeColor: 'text-purple-300 bg-purple-950/70 border-purple-500/40',
+    btnStyle: 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border-purple-500/40 hover:border-purple-400 shadow-purple-950/30',
+    keys: [
+      { label: 'x²', insert: '^2', desc: 'Squared' },
+      { label: 'x³', insert: '^3', desc: 'Cubed' },
+      { label: 'xⁿ', insert: '^', desc: 'Exponent' },
+      { label: '√x', insert: 'sqrt(', desc: 'Square root' },
+      { label: '∛x', insert: 'cbrt(', desc: 'Cube root' },
+      { label: '|x|', insert: 'abs(', desc: 'Absolute value' },
+    ],
+  },
+  {
+    name: 'Operations & Relations',
+    badgeColor: 'text-cyan-300 bg-cyan-950/70 border-cyan-500/40',
+    btnStyle: 'bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-200 border-cyan-500/40 hover:border-cyan-400 shadow-cyan-950/30',
+    keys: [
+      { label: '±', insert: '±', desc: 'Plus or minus' },
+      { label: '·', insert: '*', desc: 'Multiply' },
+      { label: '÷', insert: '/', desc: 'Fraction / Division' },
+      { label: '≠', insert: '!=', desc: 'Not equal' },
+      { label: '≤', insert: '<=', desc: 'Less than or equal' },
+      { label: '≥', insert: '>=', desc: 'Greater than or equal' },
+    ],
+  },
+  {
+    name: 'Functions & Logs',
+    badgeColor: 'text-amber-300 bg-amber-950/70 border-amber-500/40',
+    btnStyle: 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border-amber-500/40 hover:border-amber-400 shadow-amber-950/30',
+    keys: [
+      { label: 'log()', insert: 'log(', desc: 'Base-10 log' },
+      { label: 'ln()', insert: 'ln(', desc: 'Natural log' },
+      { label: 'log_b()', insert: 'log_', desc: 'Subscript base' },
+      { label: 'eˣ', insert: 'e^', desc: 'Euler exponential' },
+      { label: 'π', insert: 'pi', desc: 'Pi constant' },
+      { label: 'f(x)', insert: 'f(x)', desc: 'Function notation' },
+    ],
+  },
+  {
+    name: 'Intervals & Sets',
+    badgeColor: 'text-emerald-300 bg-emerald-950/70 border-emerald-500/40',
+    btnStyle: 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border-emerald-500/40 hover:border-emerald-400 shadow-emerald-950/30',
+    keys: [
+      { label: '∞', insert: 'inf', desc: 'Infinity' },
+      { label: '-∞', insert: '-inf', desc: 'Negative infinity' },
+      { label: '∪', insert: 'U', desc: 'Union' },
+      { label: '(-∞, ∞)', insert: '(-inf, inf)', desc: 'All real numbers' },
+      { label: '( , )', insert: '()', desc: 'Open interval' },
+      { label: '[ , ]', insert: '[]', desc: 'Closed interval' },
+    ],
+  },
+];
+
+// ⚡ Bolt: Moved quickKeys outside the component to prevent recreating the array on every render
+// Quick primary bar shown even when drawer is closed
+const quickKeys = [
+  { label: 'x²', insert: '^2', color: 'hover:bg-purple-900/50 text-purple-300 border-purple-500/40' },
+  { label: '√x', insert: 'sqrt(', color: 'hover:bg-purple-900/50 text-purple-300 border-purple-500/40' },
+  { label: 'ln', insert: 'ln(', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
+  { label: 'log', insert: 'log(', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
+  { label: 'eˣ', insert: 'e^', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
+  { label: '∞', insert: 'inf', color: 'hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40' },
+  { label: '∪', insert: 'U', color: 'hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40' },
+  { label: '±', insert: '±', color: 'hover:bg-cyan-900/50 text-cyan-300 border-cyan-500/40' },
+  { label: '/', insert: '/', color: 'hover:bg-cyan-900/50 text-cyan-300 border-cyan-500/40' },
+];
+
+// ⚡ Bolt: Wrapped MathKeypad in React.memo so it only re-renders when its props (like onInsert callbacks) actually change
+export const MathKeypad: React.FC<MathKeypadProps> = React.memo(({
   onInsert,
   onClear,
   onBackspace,
@@ -27,75 +98,6 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [activeTab, setActiveTab] = useState<'all' | 'powers' | 'transcendental' | 'intervals'>('all');
-
-  // Categorized buttons with rich high-contrast colors
-  const keyGroups: KeyGroup[] = [
-    {
-      name: 'Powers & Roots',
-      badgeColor: 'text-purple-300 bg-purple-950/70 border-purple-500/40',
-      btnStyle: 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-200 border-purple-500/40 hover:border-purple-400 shadow-purple-950/30',
-      keys: [
-        { label: 'x²', insert: '^2', desc: 'Squared' },
-        { label: 'x³', insert: '^3', desc: 'Cubed' },
-        { label: 'xⁿ', insert: '^', desc: 'Exponent' },
-        { label: '√x', insert: 'sqrt(', desc: 'Square root' },
-        { label: '∛x', insert: 'cbrt(', desc: 'Cube root' },
-        { label: '|x|', insert: 'abs(', desc: 'Absolute value' },
-      ],
-    },
-    {
-      name: 'Operations & Relations',
-      badgeColor: 'text-cyan-300 bg-cyan-950/70 border-cyan-500/40',
-      btnStyle: 'bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-200 border-cyan-500/40 hover:border-cyan-400 shadow-cyan-950/30',
-      keys: [
-        { label: '±', insert: '±', desc: 'Plus or minus' },
-        { label: '·', insert: '*', desc: 'Multiply' },
-        { label: '÷', insert: '/', desc: 'Fraction / Division' },
-        { label: '≠', insert: '!=', desc: 'Not equal' },
-        { label: '≤', insert: '<=', desc: 'Less than or equal' },
-        { label: '≥', insert: '>=', desc: 'Greater than or equal' },
-      ],
-    },
-    {
-      name: 'Functions & Logs',
-      badgeColor: 'text-amber-300 bg-amber-950/70 border-amber-500/40',
-      btnStyle: 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border-amber-500/40 hover:border-amber-400 shadow-amber-950/30',
-      keys: [
-        { label: 'log()', insert: 'log(', desc: 'Base-10 log' },
-        { label: 'ln()', insert: 'ln(', desc: 'Natural log' },
-        { label: 'log_b()', insert: 'log_', desc: 'Subscript base' },
-        { label: 'eˣ', insert: 'e^', desc: 'Euler exponential' },
-        { label: 'π', insert: 'pi', desc: 'Pi constant' },
-        { label: 'f(x)', insert: 'f(x)', desc: 'Function notation' },
-      ],
-    },
-    {
-      name: 'Intervals & Sets',
-      badgeColor: 'text-emerald-300 bg-emerald-950/70 border-emerald-500/40',
-      btnStyle: 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-200 border-emerald-500/40 hover:border-emerald-400 shadow-emerald-950/30',
-      keys: [
-        { label: '∞', insert: 'inf', desc: 'Infinity' },
-        { label: '-∞', insert: '-inf', desc: 'Negative infinity' },
-        { label: '∪', insert: 'U', desc: 'Union' },
-        { label: '(-∞, ∞)', insert: '(-inf, inf)', desc: 'All real numbers' },
-        { label: '( , )', insert: '()', desc: 'Open interval' },
-        { label: '[ , ]', insert: '[]', desc: 'Closed interval' },
-      ],
-    },
-  ];
-
-  // Quick primary bar shown even when drawer is closed
-  const quickKeys = [
-    { label: 'x²', insert: '^2', color: 'hover:bg-purple-900/50 text-purple-300 border-purple-500/40' },
-    { label: '√x', insert: 'sqrt(', color: 'hover:bg-purple-900/50 text-purple-300 border-purple-500/40' },
-    { label: 'ln', insert: 'ln(', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
-    { label: 'log', insert: 'log(', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
-    { label: 'eˣ', insert: 'e^', color: 'hover:bg-amber-900/50 text-amber-300 border-amber-500/40' },
-    { label: '∞', insert: 'inf', color: 'hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40' },
-    { label: '∪', insert: 'U', color: 'hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40' },
-    { label: '±', insert: '±', color: 'hover:bg-cyan-900/50 text-cyan-300 border-cyan-500/40' },
-    { label: '/', insert: '/', color: 'hover:bg-cyan-900/50 text-cyan-300 border-cyan-500/40' },
-  ];
 
   if (disabled) return null;
 
@@ -267,4 +269,4 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
       )}
     </div>
   );
-};
+});
