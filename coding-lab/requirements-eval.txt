@@ -1,0 +1,5 @@
+# Installed inside the SageMaker EVAL container. Kept separate from training on purpose:
+# vLLM wants its own torch/transformers versions, and Unsloth wants different ones.
+# Never mix them in one file. (Unsloth issue #4920: Qwen3.5 needs transformers>=5 while
+# Unsloth's vLLM extras still pinned transformers<5.)
+vllm==0.30.0
