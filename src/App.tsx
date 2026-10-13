@@ -24,6 +24,13 @@ for (const modId in GUIDED) {
   }
 }
 
+// ⚡ Bolt: Extracted default state out of render to preserve GuidedCard React.memo efficiency
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
@@ -110,17 +117,18 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  // ⚡ Bolt: Wrapped selection handlers in useCallback to prevent re-renders of ModuleSelector
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -138,7 +146,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -358,7 +366,8 @@ export default function App() {
     } catch (e) {}
   };
 
-  const handleReset = () => {
+  // ⚡ Bolt: Stabilized reset handler for ResultsView memoization
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -367,7 +376,7 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Progress Calculations
   const {
@@ -441,16 +450,26 @@ export default function App() {
     }
   };
 
+  // ⚡ Bolt: Wrapped modal callbacks in useCallback to prevent child components from re-rendering
+  const handleToggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleCloseFormulas = useCallback(() => setIsFormulaOpen(false), []);
+
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -582,13 +601,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
@@ -692,7 +705,7 @@ export default function App() {
             guidedData={GUIDED}
             guidedState={guidedState}
             onReset={handleReset}
-            onOpenGithub={() => setIsGithubOpen(true)}
+            onOpenGithub={handleOpenGithub}
           />
         )}
       </main>
@@ -700,19 +713,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormulas}
       />
     </div>
   );
