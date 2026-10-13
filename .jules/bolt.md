@@ -18,3 +18,7 @@
 ## 2024-10-25 - [Optimize Component Memory and Re-renders]
 **Learning:** Found several performance bottlenecks where `MathKeypad` recreated large configuration arrays (`keyGroups`, `quickKeys`) on every render, and `PracticeCard` passed unstable callbacks causing `MathKeypad` to re-render. Additionally, `FunctionVisualizer` was recalculating heavy coordinate paths on each render.
 **Action:** Extract large static configuration arrays (`keyGroups`, `quickKeys`) and coordinate variables out of functional components. Wrap child components like `MathKeypad` and `FunctionVisualizer` in `React.memo`, wrap their callbacks in `useCallback` from the parent (`PracticeCard`), and use `useMemo` for heavy string/math path generation. Always add code comments to document optimizations (`// ⚡ Bolt: ...`).
+
+## 2026-10-07 - [Stabilizing Props for React.memo]
+**Learning:** Adding `React.memo` to a child component doesn't prevent re-renders if the parent component passes unstable inline callbacks (e.g., `onClose={() => setIsSandboxOpen(false)}`). The parent component `App.tsx` has a timer that updates every second, meaning inline callbacks are recreated every second, causing the memoized children to re-render regardless.
+**Action:** When adding `React.memo` to child components, always ensure that the function props passed from the parent are stabilized using `useCallback` with a proper dependency array.
