@@ -11,7 +11,8 @@ interface HeaderProps {
   onNavigateHome?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+// ⚡ Bolt: Wrapped Header in React.memo to prevent re-renders when parent states (other than seconds/props) change
+export const Header: React.FC<HeaderProps> = React.memo(({
   seconds,
   onOpenSandbox,
   onOpenGithub,
@@ -93,4 +94,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});
