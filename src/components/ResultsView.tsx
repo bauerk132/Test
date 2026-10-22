@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ModuleId, ModuleStats, PracticeProblem, PracticeResult, GuidedProgress, GuidedExample } from '../types';
 import { MICRO_SKILLS } from '../data/microSkills';
 import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
@@ -17,7 +17,8 @@ interface ResultsViewProps {
   onOpenGithub: () => void;
 }
 
-export const ResultsView: React.FC<ResultsViewProps> = ({
+// ⚡ Bolt: Wrapped ResultsView in React.memo to prevent expensive re-renders when parent state (like App timer) updates.
+export const ResultsView: React.FC<ResultsViewProps> = React.memo(({
   selectedMods,
   earnedPts,
   maxPts,
@@ -78,55 +79,74 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     'M9.16': 'Each step of 1 on the Richter or Decibel scale is an order of magnitude (10^x factor difference).',
   };
 
-  // Guided Statistics
-  let totalSteps = 0;
-  let correctSteps = 0;
-  let totalAttempts = 0;
-  let completedExamples = 0;
-  let totalExamples = 0;
+  // ⚡ Bolt: Memoized O(N) guided stats computation so it doesn't recalculate on every render
+  const {
+    totalSteps,
+    correctSteps,
+    totalAttempts,
+    completedExamples,
+    totalExamples,
+    avgAttempts
+  } = useMemo(() => {
+    let tSteps = 0;
+    let cSteps = 0;
+    let tAttempts = 0;
+    let compEx = 0;
+    let tEx = 0;
 
-  selectedMods.forEach((m) => {
-    (guidedData[m] || []).forEach((g) => {
-      totalExamples++;
-      const st = guidedState[g.id];
-      if (st?.complete) completedExamples++;
-      g.steps.forEach((_, sIdx) => {
-        totalSteps++;
-        const res = st?.stepResults[sIdx];
-        if (res) {
-          if (res.correct) correctSteps++;
-          totalAttempts += res.attempts || 1;
-        }
+    selectedMods.forEach((m) => {
+      (guidedData[m] || []).forEach((g) => {
+        tEx++;
+        const st = guidedState[g.id];
+        if (st?.complete) compEx++;
+        g.steps.forEach((_, sIdx) => {
+          tSteps++;
+          const res = st?.stepResults[sIdx];
+          if (res) {
+            if (res.correct) cSteps++;
+            tAttempts += res.attempts || 1;
+          }
+        });
       });
     });
-  });
 
-  const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
+    const avg = cSteps > 0 ? (tAttempts / cSteps).toFixed(1) : '1.0';
+    return {
+      totalSteps: tSteps,
+      correctSteps: cSteps,
+      totalAttempts: tAttempts,
+      completedExamples: compEx,
+      totalExamples: tEx,
+      avgAttempts: avg,
+    };
+  }, [selectedMods, guidedData, guidedState]);
 
-  // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
-        const res = practiceResults[q.id];
-        if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
-        }
-      });
+  // ⚡ Bolt: Memoized O(N) gaps array calculation to prevent redundant allocations and array sorting during re-renders
+  const gaps = useMemo(() => {
+    const computedGaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
+    selectedMods.forEach((m) => {
+      const errorCountByMs: Record<string, number> = {};
+      practiceProblems
+        .filter((q) => q.mod === m)
+        .forEach((q) => {
+          const res = practiceResults[q.id];
+          if (res && res.points < 2) {
+            errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
+          }
+        });
 
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
-        ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
+      Object.entries(errorCountByMs).forEach(([ms, count]) => {
+        computedGaps.push({
+          mod: m,
+          ms,
+          errors: count,
+          priority: count >= 2 ? 'high' : 'medium',
+        });
       });
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    return computedGaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+  }, [selectedMods, practiceProblems, practiceResults]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);
@@ -139,12 +159,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     } catch (e) {}
   };
 
-  const filteredReviewList = practiceProblems.filter((p) => {
-    const res = practiceResults[p.id];
-    if (filterReview === 'missed') return res && res.points < 2;
-    if (filterReview === 'correct') return res && res.points === 2;
-    return true;
-  });
+  // ⚡ Bolt: Memoized O(N) review list filtering
+  const filteredReviewList = useMemo(() => {
+    return practiceProblems.filter((p) => {
+      const res = practiceResults[p.id];
+      if (filterReview === 'missed') return res && res.points < 2;
+      if (filterReview === 'correct') return res && res.points === 2;
+      return true;
+    });
+  }, [practiceProblems, practiceResults, filterReview]);
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 animate-fadeIn">
@@ -528,4 +551,4 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       )}
     </div>
   );
-};
+});
