@@ -16,7 +16,8 @@ const scale = 18;
 const toSvgX = (xVal: number) => cx + xVal * scale;
 const toSvgY = (yVal: number) => cy - yVal * scale;
 
-export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = ({
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent states (like the 1s timer) change
+export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -25,8 +26,6 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
   const [b, setB] = useState<number>(1);
   const [h, setH] = useState<number>(0);
   const [k, setK] = useState<number>(0);
-
-  if (!isOpen) return null;
 
   const resetParams = () => {
     setA(1);
@@ -124,6 +123,9 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
     if (parentType === 'logarithmic') return `g(x) = ${aStr}log₂[${bStr}${hStr}]${kStr}`;
     return '';
   };
+
+  // ⚡ Bolt: Moved early return after all Hooks to comply with React's Rules of Hooks
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -315,4 +317,4 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
       </div>
     </div>
   );
-};
+});
