@@ -24,6 +24,13 @@ for (const modId in GUIDED) {
   }
 }
 
+// ⚡ Bolt: Extract constant object reference for fallback to prevent GuidedCard re-renders
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
@@ -92,6 +99,11 @@ export default function App() {
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [isGithubOpen, setIsGithubOpen] = useState(false);
   const [isFormulaOpen, setIsFormulaOpen] = useState(false);
+
+  // ⚡ Bolt: Stabilized modal close handlers to prevent re-renders in memoized modal components
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleCloseFormula = useCallback(() => setIsFormulaOpen(false), []);
 
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
@@ -582,13 +594,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
@@ -700,19 +706,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormula}
       />
     </div>
   );

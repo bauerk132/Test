@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { GuidedExample, GuidedProgress, MicroSkill } from '../types';
 import { FunctionVisualizer } from './FunctionVisualizer';
 import { MathKeypad } from './MathKeypad';
@@ -32,6 +32,28 @@ export const GuidedCard: React.FC<GuidedCardProps> = React.memo(({
   const toggleHint = (stepIdx: number) => {
     setHintVisible((prev) => ({ ...prev, [stepIdx]: !prev[stepIdx] }));
   };
+
+  // ⚡ Bolt: Stabilized keypad handlers with useCallback to prevent MathKeypad re-renders on keystrokes
+  const handleKeypadInsert = useCallback((sym: string) => {
+    setInputs((prev) => ({
+      ...prev,
+      [progress.currentStep]: (prev[progress.currentStep] ?? '') + sym
+    }));
+  }, [progress.currentStep]);
+
+  const handleKeypadClear = useCallback(() => {
+    setInputs((prev) => ({
+      ...prev,
+      [progress.currentStep]: ''
+    }));
+  }, [progress.currentStep]);
+
+  const handleKeypadBackspace = useCallback(() => {
+    setInputs((prev) => ({
+      ...prev,
+      [progress.currentStep]: (prev[progress.currentStep] ?? '').slice(0, -1)
+    }));
+  }, [progress.currentStep]);
 
   const handleCheck = (stepIdx: number) => {
     const val = inputs[stepIdx] || '';
@@ -194,13 +216,9 @@ export const GuidedCard: React.FC<GuidedCardProps> = React.memo(({
                       {isCurrent && (
                         <div className="mb-2">
                           <MathKeypad
-                            onInsert={(sym) =>
-                              handleInputChange(sIdx, (inputs[sIdx] ?? '') + sym)
-                            }
-                            onClear={() => handleInputChange(sIdx, '')}
-                            onBackspace={() =>
-                              handleInputChange(sIdx, (inputs[sIdx] ?? '').slice(0, -1))
-                            }
+                            onInsert={handleKeypadInsert}
+                            onClear={handleKeypadClear}
+                            onBackspace={handleKeypadBackspace}
                           />
                         </div>
                       )}
