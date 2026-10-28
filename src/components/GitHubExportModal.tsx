@@ -6,7 +6,7 @@ interface GitHubExportModalProps {
   onClose: () => void;
 }
 
-export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
+export const GitHubExportModal: React.FC<GitHubExportModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -179,4 +179,4 @@ export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
       </div>
     </div>
   );
-};
+});

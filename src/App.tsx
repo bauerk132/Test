@@ -110,17 +110,20 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  // ⚡ Bolt: Wrapped in useCallback to prevent re-rendering ModuleSelector
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  // ⚡ Bolt: Wrapped in useCallback to prevent re-rendering ModuleSelector
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  // ⚡ Bolt: Wrapped in useCallback to prevent re-rendering ModuleSelector
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -138,7 +141,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -256,8 +259,9 @@ export default function App() {
     setUserWork(omitKey(problemId));
   }, []);
 
+  // ⚡ Bolt: Wrapped in useCallback to prevent unnecessary re-renders when generating variants
   // Bulk shuffle all problems in a module with new algorithmic variants
-  const handleShuffleModuleVariants = (modId: ModuleId) => {
+  const handleShuffleModuleVariants = useCallback((modId: ModuleId) => {
     const problems = UNIFIED_EXAM_QUESTIONS[modId] || [];
     const updatedVariants = { ...problemVariants };
     const updatedCounters = { ...variantCounters };
@@ -277,7 +281,7 @@ export default function App() {
     setVariantCounters(updatedCounters);
     setUserAnswers(updatedAnswers);
     setUserWork(updatedWork);
-  };
+  }, [problemVariants, variantCounters, userAnswers, userWork]);
 
   // Find a problem from active variants or baseline bank
   const findProblem = (qId: string): PracticeProblem | null => {
@@ -328,7 +332,8 @@ export default function App() {
     );
   }, [selectedMods, problemVariants]);
 
-  const handleSubmit = () => {
+  // ⚡ Bolt: Wrapped in useCallback to ensure referential stability
+  const handleSubmit = useCallback(() => {
     setIsTimerRunning(false);
     setIsGraded(true);
 
@@ -356,9 +361,10 @@ export default function App() {
         origin: { y: 0.6 },
       });
     } catch (e) {}
-  };
+  }, [activeProblems, userAnswers, userWork, selectedMods]);
 
-  const handleReset = () => {
+  // ⚡ Bolt: Wrapped in useCallback to prevent re-rendering ResultsView
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -367,7 +373,7 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Progress Calculations
   const {
@@ -433,24 +439,34 @@ export default function App() {
     return { earnedPts: earned, maxPts: max, modScores: scores };
   }, [activeProblems, selectedMods, practiceResults]);
 
-  const scrollToAnchor = (mod: ModuleId) => {
+  const scrollToAnchor = useCallback((mod: ModuleId) => {
     setActiveTab(mod);
     const el = document.getElementById(`mod-section-${mod}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
+
+  // ⚡ Bolt: Extracting constant handlers to prevent passing inline anonymous functions as props
+  const handleToggleTimer = useCallback(() => setIsTimerRunning(prev => !prev), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleCloseFormulas = useCallback(() => setIsFormulaOpen(false), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
 
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -692,7 +708,7 @@ export default function App() {
             guidedData={GUIDED}
             guidedState={guidedState}
             onReset={handleReset}
-            onOpenGithub={() => setIsGithubOpen(true)}
+            onOpenGithub={handleOpenGithub}
           />
         )}
       </main>
@@ -700,19 +716,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormulas}
       />
     </div>
   );
