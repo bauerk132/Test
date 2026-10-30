@@ -18,3 +18,7 @@
 ## 2024-10-25 - [Optimize Component Memory and Re-renders]
 **Learning:** Found several performance bottlenecks where `MathKeypad` recreated large configuration arrays (`keyGroups`, `quickKeys`) on every render, and `PracticeCard` passed unstable callbacks causing `MathKeypad` to re-render. Additionally, `FunctionVisualizer` was recalculating heavy coordinate paths on each render.
 **Action:** Extract large static configuration arrays (`keyGroups`, `quickKeys`) and coordinate variables out of functional components. Wrap child components like `MathKeypad` and `FunctionVisualizer` in `React.memo`, wrap their callbacks in `useCallback` from the parent (`PracticeCard`), and use `useMemo` for heavy string/math path generation. Always add code comments to document optimizations (`// ⚡ Bolt: ...`).
+
+## 2024-11-20 - [React Top-Level Timer Anti-Pattern]
+**Learning:** Found a severe performance bottleneck where a global `seconds` timer updating every 1000ms in the top-level `App.tsx` component triggered cascading re-renders across all deeply nested child components.
+**Action:** Always verify if a top-level timer state is causing unnecessary re-renders. Use `React.memo` on heavy child components and stabilize event handlers with `useCallback` to isolate the fast-changing state updates from the rest of the render tree. Ensure `useCallback` is called at the top level of the component, not inline in JSX props, to avoid breaking the Rules of Hooks.
