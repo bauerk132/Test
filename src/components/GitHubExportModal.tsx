@@ -6,7 +6,8 @@ interface GitHubExportModalProps {
   onClose: () => void;
 }
 
-export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders on global timer ticks
+export const GitHubExportModal: React.FC<GitHubExportModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -179,4 +180,4 @@ export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
       </div>
     </div>
   );
-};
+});
