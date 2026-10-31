@@ -16,6 +16,13 @@ import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 import { GuidedExample } from './types';
 
+// ⚡ Bolt: Extracted inline object to module-level constant to prevent memoization leaks on `GuidedCard`
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 // Precompute a flat map of guided examples for O(1) lookups
 const guidedExampleMap = new Map<string, GuidedExample>();
 for (const modId in GUIDED) {
@@ -110,17 +117,18 @@ export default function App() {
     };
   }, [isTimerRunning]);
 
-  const toggleMod = (mod: ModuleId) => {
+  // ⚡ Bolt: Wrapped callbacks in useCallback to prevent unnecessary re-renders of memoized child components
+  const toggleMod = useCallback((mod: ModuleId) => {
     setSelectedMods((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod].sort((a, b) => a - b)
     );
-  };
+  }, []);
 
-  const handleSelectPreset = (mods: ModuleId[]) => {
+  const handleSelectPreset = useCallback((mods: ModuleId[]) => {
     setSelectedMods(mods);
-  };
+  }, []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     if (selectedMods.length === 0) return;
     // Initialize guided progression states for selected modules
     const initGuided: Record<string, GuidedProgress> = {};
@@ -138,7 +146,7 @@ export default function App() {
     setView('learning');
     setIsTimerRunning(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [selectedMods]);
 
   // Smart checking for guided steps
   const handleCheckStep = useCallback((exampleId: string, stepIndex: number, userAnswer: string): boolean => {
@@ -216,12 +224,19 @@ export default function App() {
     });
   }, [selectedMods]);
 
-  const handleAnswerChange = useCallback((qId: string, val: string) => {
-    setUserAnswers((prev) => ({ ...prev, [qId]: val }));
+  // ⚡ Bolt: Updated state handlers to support functional updaters to prevent callback recreation in PracticeCard
+  const handleAnswerChange = useCallback((qId: string, valOrUpdater: string | ((prev: string) => string)) => {
+    setUserAnswers((prev) => {
+      const newVal = typeof valOrUpdater === 'function' ? valOrUpdater(prev[qId] || '') : valOrUpdater;
+      return { ...prev, [qId]: newVal };
+    });
   }, []);
 
-  const handleWorkChange = useCallback((qId: string, val: string) => {
-    setUserWork((prev) => ({ ...prev, [qId]: val }));
+  const handleWorkChange = useCallback((qId: string, valOrUpdater: string | ((prev: string) => string)) => {
+    setUserWork((prev) => {
+      const newVal = typeof valOrUpdater === 'function' ? valOrUpdater(prev[qId] || '') : valOrUpdater;
+      return { ...prev, [qId]: newVal };
+    });
   }, []);
 
   // Generate a single problem variant with randomized numbers
@@ -328,7 +343,7 @@ export default function App() {
     );
   }, [selectedMods, problemVariants]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     setIsTimerRunning(false);
     setIsGraded(true);
 
@@ -356,9 +371,9 @@ export default function App() {
         origin: { y: 0.6 },
       });
     } catch (e) {}
-  };
+  }, [activeProblems, userAnswers, userWork]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -367,7 +382,7 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Progress Calculations
   const {
@@ -433,24 +448,34 @@ export default function App() {
     return { earnedPts: earned, maxPts: max, modScores: scores };
   }, [activeProblems, selectedMods, practiceResults]);
 
-  const scrollToAnchor = (mod: ModuleId) => {
+  const scrollToAnchor = useCallback((mod: ModuleId) => {
     setActiveTab(mod);
     const el = document.getElementById(`mod-section-${mod}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
+
+  // ⚡ Bolt: Stabilized Header handlers to prevent re-renders on global timer ticks
+  const handleToggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
+  const handleCloseSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const handleCloseGithub = useCallback(() => setIsGithubOpen(false), []);
+  const handleCloseFormulas = useCallback(() => setIsFormulaOpen(false), []);
 
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -582,13 +607,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
@@ -700,19 +719,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={handleCloseSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={handleCloseGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={handleCloseFormulas}
       />
     </div>
   );
