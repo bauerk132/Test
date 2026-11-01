@@ -30,6 +30,16 @@ const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T
   return next;
 };
 
+// ⚡ Bolt: Extracted DEFAULT_GUIDED_PROGRESS outside the component body
+// 💡 What: Created an immutable module-level constant for the fallback progress object.
+// 🎯 Why: Previously an inline `{ currentStep: 0, stepResults: [], complete: false }` was used. Inline objects create a new reference on every render, which destroys the `React.memo` performance optimization of child components receiving it.
+// 📊 Impact: Prevents GuidedCard from re-rendering every second when the global timer updates.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 const moduleHeaderInfo: Record<
   ModuleId,
   { title: string; subtitle: string; emoji: string; gradient: string }
@@ -95,6 +105,19 @@ export default function App() {
 
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
+
+  // ⚡ Bolt: Wrapped Modal & Navigation handlers in useCallback
+  // 💡 What: Stabilized `closeSandboxModal`, `openSandboxModal`, etc., using `useCallback`.
+  // 🎯 Why: Handlers created inline inside the render body are recreated every second when the timer ticks, causing their memoized child components (`Header`, `InteractiveSandboxModal`, etc.) to continuously re-render.
+  // 📊 Impact: Child modals and the Header will now skip unnecessary re-renders.
+  const openSandboxModal = useCallback(() => setIsSandboxOpen(true), []);
+  const closeSandboxModal = useCallback(() => setIsSandboxOpen(false), []);
+  const openGithubModal = useCallback(() => setIsGithubOpen(true), []);
+  const closeGithubModal = useCallback(() => setIsGithubOpen(false), []);
+  const openFormulaModal = useCallback(() => setIsFormulaOpen(true), []);
+  const closeFormulaModal = useCallback(() => setIsFormulaOpen(false), []);
+  const navigateHomeModal = useCallback(() => setView('select'), []);
+  const toggleTimer = useCallback(() => setIsTimerRunning((prev) => !prev), []);
 
   // Timer Effect
   useEffect(() => {
@@ -216,12 +239,26 @@ export default function App() {
     });
   }, [selectedMods]);
 
-  const handleAnswerChange = useCallback((qId: string, val: string) => {
-    setUserAnswers((prev) => ({ ...prev, [qId]: val }));
+  // ⚡ Bolt: Modified handleAnswerChange to optionally take functional state updater functions
+  // 💡 What: Allow val to be a string or a function `(prev: string) => string`
+  // 🎯 Why: This removes the need for child components like PracticeCard to depend on current `answer` values in their own callbacks.
+  // 📊 Impact: Stabilizes callbacks passed to child components, preventing re-renders of the child when its own text changes.
+  const handleAnswerChange = useCallback((qId: string, val: string | ((prev: string) => string)) => {
+    setUserAnswers((prev) => {
+      const newVal = typeof val === 'function' ? val(prev[qId] || '') : val;
+      return { ...prev, [qId]: newVal };
+    });
   }, []);
 
-  const handleWorkChange = useCallback((qId: string, val: string) => {
-    setUserWork((prev) => ({ ...prev, [qId]: val }));
+  // ⚡ Bolt: Modified handleWorkChange to optionally take functional state updater functions
+  // 💡 What: Allow val to be a string or a function `(prev: string) => string`
+  // 🎯 Why: This removes the need for child components like PracticeCard to depend on current `work` values in their own callbacks.
+  // 📊 Impact: Stabilizes callbacks passed to child components, preventing re-renders of the child when its own text changes.
+  const handleWorkChange = useCallback((qId: string, val: string | ((prev: string) => string)) => {
+    setUserWork((prev) => {
+      const newVal = typeof val === 'function' ? val(prev[qId] || '') : val;
+      return { ...prev, [qId]: newVal };
+    });
   }, []);
 
   // Generate a single problem variant with randomized numbers
@@ -446,11 +483,11 @@ export default function App() {
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={toggleTimer}
+        onOpenSandbox={openSandboxModal}
+        onOpenGithub={openGithubModal}
+        onOpenFormulas={openFormulaModal}
+        onNavigateHome={navigateHomeModal}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -582,13 +619,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
@@ -692,7 +723,7 @@ export default function App() {
             guidedData={GUIDED}
             guidedState={guidedState}
             onReset={handleReset}
-            onOpenGithub={() => setIsGithubOpen(true)}
+            onOpenGithub={openGithubModal}
           />
         )}
       </main>
@@ -700,19 +731,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={closeSandboxModal}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={closeGithubModal}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={closeFormulaModal}
       />
     </div>
   );

@@ -14,8 +14,8 @@ interface PracticeCardProps {
   variantNum?: number;
   onGenerateVariant?: (id: string) => void;
   onResetVariant?: (id: string) => void;
-  onAnswerChange: (id: string, val: string) => void;
-  onWorkChange: (id: string, val: string) => void;
+  onAnswerChange: (id: string, val: string | ((prev: string) => string)) => void;
+  onWorkChange: (id: string, val: string | ((prev: string) => string)) => void;
 }
 
 export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
@@ -35,14 +35,17 @@ export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
   const [showHint, setShowHint] = useState(false);
   const [activeTarget, setActiveTarget] = useState<'answer' | 'work'>('answer');
 
-  // ⚡ Bolt: Wrapped keypad handlers in useCallback so the child MathKeypad (which is memoized) doesn't re-render unnecessarily
+  // ⚡ Bolt: Modified keypad handlers to use functional state updaters via onAnswerChange and onWorkChange.
+  // 💡 What: Replaced direct string manipulation referencing `answer` and `work` with a functional updater function `prev => ...`. Removed `answer` and `work` from dependency arrays.
+  // 🎯 Why: This avoids recreating these callbacks on every keystroke, which previously broke `MathKeypad`'s memoization and caused it to re-render constantly.
+  // 📊 Impact: Significantly reduces re-renders of the complex virtual keyboard component during rapid typing.
   const handleKeypadInsert = useCallback((symbol: string) => {
     if (activeTarget === 'answer') {
-      onAnswerChange(problem.id, (answer || '') + symbol);
+      onAnswerChange(problem.id, (prev) => prev + symbol);
     } else {
-      onWorkChange(problem.id, (work || '') + symbol);
+      onWorkChange(problem.id, (prev) => prev + symbol);
     }
-  }, [activeTarget, problem.id, answer, work, onAnswerChange, onWorkChange]);
+  }, [activeTarget, problem.id, onAnswerChange, onWorkChange]);
 
   const handleKeypadClear = useCallback(() => {
     if (activeTarget === 'answer') {
@@ -54,11 +57,11 @@ export const PracticeCard: React.FC<PracticeCardProps> = React.memo(({
 
   const handleKeypadBackspace = useCallback(() => {
     if (activeTarget === 'answer') {
-      onAnswerChange(problem.id, (answer || '').slice(0, -1));
+      onAnswerChange(problem.id, (prev) => prev.slice(0, -1));
     } else {
-      onWorkChange(problem.id, (work || '').slice(0, -1));
+      onWorkChange(problem.id, (prev) => prev.slice(0, -1));
     }
-  }, [activeTarget, problem.id, answer, work, onAnswerChange, onWorkChange]);
+  }, [activeTarget, problem.id, onAnswerChange, onWorkChange]);
 
   const getDiffBadge = (diff: 'easy' | 'medium' | 'hard') => {
     switch (diff) {
