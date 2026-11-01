@@ -11,7 +11,11 @@ interface HeaderProps {
   onNavigateHome?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+// ⚡ Bolt: Wrapped Header in React.memo()
+// 💡 What: Used `React.memo` to memoize the component rendering.
+// 🎯 Why: This component sits at the top of the tree and would otherwise re-render on every state update in App (like the timer), even when its own props don't change.
+// 📊 Impact: Prevents wasteful DOM diffs in the layout header every second.
+export const Header: React.FC<HeaderProps> = React.memo(({
   seconds,
   onOpenSandbox,
   onOpenGithub,
@@ -93,4 +97,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});

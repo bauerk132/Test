@@ -6,7 +6,11 @@ interface FormulaModalProps {
   onClose: () => void;
 }
 
-export const FormulaModal: React.FC<FormulaModalProps> = ({ isOpen, onClose }) => {
+// ⚡ Bolt: Wrapped FormulaModal in React.memo()
+// 💡 What: Used `React.memo` to memoize the component rendering.
+// 🎯 Why: This component does not need to re-render on every state update in App (like the timer).
+// 📊 Impact: Prevents wasteful DOM diffs.
+export const FormulaModal: React.FC<FormulaModalProps> = React.memo(({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
@@ -187,4 +191,4 @@ export const FormulaModal: React.FC<FormulaModalProps> = ({ isOpen, onClose }) =
       </div>
     </div>
   );
-};
+});

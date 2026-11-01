@@ -6,7 +6,11 @@ interface GitHubExportModalProps {
   onClose: () => void;
 }
 
-export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
+// ⚡ Bolt: Wrapped GitHubExportModal in React.memo()
+// 💡 What: Used `React.memo` to memoize the component rendering.
+// 🎯 Why: This component does not need to re-render on every state update in App (like the timer).
+// 📊 Impact: Prevents wasteful DOM diffs.
+export const GitHubExportModal: React.FC<GitHubExportModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -179,4 +183,4 @@ export const GitHubExportModal: React.FC<GitHubExportModalProps> = ({
       </div>
     </div>
   );
-};
+});

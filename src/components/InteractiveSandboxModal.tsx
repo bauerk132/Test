@@ -16,7 +16,11 @@ const scale = 18;
 const toSvgX = (xVal: number) => cx + xVal * scale;
 const toSvgY = (yVal: number) => cy - yVal * scale;
 
-export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = ({
+// ⚡ Bolt: Wrapped InteractiveSandboxModal in React.memo()
+// 💡 What: Used `React.memo` to memoize the component rendering.
+// 🎯 Why: This modal contains a very heavy SVG renderer. If unmemoized, it would re-render (and recalculate parts of its state) every time the global timer ticked.
+// 📊 Impact: Prevents expensive coordinate recalculations and DOM diffs in the function grapher.
+export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = React.memo(({
   isOpen,
   onClose,
 }) => {
@@ -315,4 +319,4 @@ export const InteractiveSandboxModal: React.FC<InteractiveSandboxModalProps> = (
       </div>
     </div>
   );
-};
+});
