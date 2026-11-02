@@ -410,24 +410,33 @@ export default function App() {
 
   // Results Scores
   const { earnedPts, maxPts, modScores } = useMemo(() => {
+    // ⚡ Bolt: Replaced nested activeProblems.filter inside selectedMods.forEach with O(N) single-pass iteration
     let earned = 0;
     const max = activeProblems.length * 2;
-    const scores: Record<number, ModuleStats> = {};
 
+    // Initialize scores
+    const scores: Record<number, ModuleStats> = {};
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
+      scores[m] = { earned: 0, max: 0, pct: 0 };
+    });
+
+    // Single pass accumulation
+    activeProblems.forEach((p) => {
+      if (scores[p.mod]) {
+        scores[p.mod].max += 2;
         const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+        if (res) {
+          scores[p.mod].earned += res.points;
+          earned += res.points;
+        }
+      }
+    });
+
+    // Compute percentages
+    selectedMods.forEach((m) => {
+      if (scores[m]) {
+        scores[m].pct = scores[m].max > 0 ? Math.round((scores[m].earned / scores[m].max) * 100) : 0;
+      }
     });
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
