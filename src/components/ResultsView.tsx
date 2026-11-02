@@ -104,29 +104,31 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
 
   // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
+  // ⚡ Bolt: Wrapped `gaps` calculation in `useMemo` and replaced O(N*M) nested `.filter()` loops with single-pass iteration
+  const gaps = React.useMemo(() => {
+    const errorCountByMs: Record<string, { mod: ModuleId; errors: number }> = {};
+
+    practiceProblems.forEach((q) => {
+      if (selectedMods.includes(q.mod)) {
         const res = practiceResults[q.id];
         if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
+          if (!errorCountByMs[q.ms]) {
+            errorCountByMs[q.ms] = { mod: q.mod, errors: 0 };
+          }
+          errorCountByMs[q.ms].errors += 1;
         }
-      });
-
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
-        ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
-      });
+      }
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    const gapList = Object.entries(errorCountByMs).map(([ms, data]) => ({
+      mod: data.mod,
+      ms,
+      errors: data.errors,
+      priority: data.errors >= 2 ? 'high' : 'medium' as 'high' | 'medium',
+    }));
+
+    return gapList.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+  }, [practiceProblems, practiceResults, selectedMods]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);
@@ -139,12 +141,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     } catch (e) {}
   };
 
-  const filteredReviewList = practiceProblems.filter((p) => {
+  // ⚡ Bolt: Wrapped `filteredReviewList` in `useMemo` to prevent unnecessary array filtering when other components update
+  const filteredReviewList = React.useMemo(() => practiceProblems.filter((p) => {
     const res = practiceResults[p.id];
     if (filterReview === 'missed') return res && res.points < 2;
     if (filterReview === 'correct') return res && res.points === 2;
     return true;
-  });
+  }), [practiceProblems, practiceResults, filterReview]);
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 animate-fadeIn">
