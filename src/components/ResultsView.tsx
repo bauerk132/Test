@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ModuleId, ModuleStats, PracticeProblem, PracticeResult, GuidedProgress, GuidedExample } from '../types';
 import { MICRO_SKILLS } from '../data/microSkills';
 import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
@@ -104,29 +104,34 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
 
   // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
-        const res = practiceResults[q.id];
-        if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
-        }
-      });
+  // ⚡ Bolt: Wrapped gaps computation in useMemo and rewrote it as a single-pass O(N) loop
+  // instead of a nested filter to avoid expensive re-calculations when unrelated state changes.
+  const gaps = useMemo(() => {
+    const errorCountByMs: Record<string, { mod: ModuleId; count: number }> = {};
 
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
+    practiceProblems.forEach((q) => {
+      if (!selectedMods.includes(q.mod)) return;
+      const res = practiceResults[q.id];
+      if (res && res.points < 2) {
+        if (!errorCountByMs[q.ms]) {
+          errorCountByMs[q.ms] = { mod: q.mod, count: 0 };
+        }
+        errorCountByMs[q.ms].count += 1;
+      }
+    });
+
+    const calculatedGaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
+    Object.entries(errorCountByMs).forEach(([ms, data]) => {
+      calculatedGaps.push({
+        mod: data.mod,
         ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
+        errors: data.count,
+        priority: data.count >= 2 ? 'high' : 'medium',
       });
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    return calculatedGaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+  }, [practiceProblems, practiceResults, selectedMods]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);

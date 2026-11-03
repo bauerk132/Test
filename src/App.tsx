@@ -24,6 +24,9 @@ for (const modId in GUIDED) {
   }
 }
 
+// ⚡ Bolt: Extracted default progress object to module level to prevent inline object creation on every render which breaks React.memo for GuidedCard
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = { currentStep: 0, stepResults: [], complete: false };
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
@@ -175,7 +178,7 @@ export default function App() {
     }
 
     setGuidedState((prev) => {
-      const cur = prev[exampleId] || { currentStep: 0, stepResults: [], complete: false };
+      const cur = prev[exampleId] || DEFAULT_GUIDED_PROGRESS;
       const updatedResults = [...cur.stepResults];
       const prevAttempt = updatedResults[stepIndex]?.attempts || 0;
       updatedResults[stepIndex] = {
@@ -410,24 +413,30 @@ export default function App() {
 
   // Results Scores
   const { earnedPts, maxPts, modScores } = useMemo(() => {
+    // ⚡ Bolt: Rewrote O(N*M) nested filter/forEach into a single-pass O(N) accumulation for computing scores
     let earned = 0;
     const max = activeProblems.length * 2;
     const scores: Record<number, ModuleStats> = {};
 
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
+      scores[m] = { earned: 0, max: 0, pct: 0 };
+    });
+
+    activeProblems.forEach((p) => {
+      if (scores[p.mod]) {
+        scores[p.mod].max += 2;
         const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+        if (res) {
+          scores[p.mod].earned += res.points;
+          earned += res.points;
+        }
+      }
+    });
+
+    selectedMods.forEach((m) => {
+      if (scores[m]) {
+        scores[m].pct = scores[m].max > 0 ? Math.round((scores[m].earned / scores[m].max) * 100) : 0;
+      }
     });
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
@@ -582,13 +591,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
