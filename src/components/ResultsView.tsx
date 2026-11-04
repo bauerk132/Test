@@ -4,6 +4,13 @@ import { MICRO_SKILLS } from '../data/microSkills';
 import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+// ⚡ Bolt: Extracted static constant lookups to a module-level Map to prevent repeated O(N) array traversals inside render loops.
+const microSkillsByMod = Object.values(MICRO_SKILLS).reduce((acc, ms) => {
+  if (!acc[ms.mod]) acc[ms.mod] = [];
+  acc[ms.mod].push(ms);
+  return acc;
+}, {} as Record<number, typeof MICRO_SKILLS[keyof typeof MICRO_SKILLS][]>);
+
 interface ResultsViewProps {
   selectedMods: ModuleId[];
   earnedPts: number;
@@ -104,29 +111,38 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
 
   // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
+  // ⚡ Bolt: Wrapped gaps calculation in useMemo and refactored O(N*M) nested .filter() inside .forEach() to a single-pass accumulation.
+  const gaps = React.useMemo(() => {
+    const computedGaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
+
+    // Build single-pass mapping of error counts by module -> micro-skill
+    const errorsByModAndMs: Record<number, Record<string, number>> = {};
+    selectedMods.forEach(m => {
+      errorsByModAndMs[m] = {};
+    });
+
+    practiceProblems.forEach((q) => {
+      if (errorsByModAndMs[q.mod] !== undefined) {
         const res = practiceResults[q.id];
         if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
+          errorsByModAndMs[q.mod][q.ms] = (errorsByModAndMs[q.mod][q.ms] || 0) + 1;
         }
-      });
+      }
+    });
 
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
-        ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
+    selectedMods.forEach((m) => {
+      Object.entries(errorsByModAndMs[m]).forEach(([ms, count]) => {
+        computedGaps.push({
+          mod: m,
+          ms,
+          errors: count,
+          priority: count >= 2 ? 'high' : 'medium',
+        });
       });
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    return computedGaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+  }, [practiceProblems, practiceResults, selectedMods]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);
@@ -366,7 +382,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
           <div className="space-y-6">
             {selectedMods.map((m) => {
-              const msInMod = Object.values(MICRO_SKILLS).filter((ms) => ms.mod === m);
+              const msInMod = microSkillsByMod[m] || [];
               return (
                 <div key={m} className="border-t border-slate-800 pt-4">
                   <h4 className="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">

@@ -414,20 +414,27 @@ export default function App() {
     const max = activeProblems.length * 2;
     const scores: Record<number, ModuleStats> = {};
 
+    // Initialize scores
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
+      scores[m] = { earned: 0, max: 0, pct: 0 };
+    });
+
+    // ⚡ Bolt: Refactored O(N*M) nested .filter() inside .forEach() to a single-pass accumulation for performance.
+    activeProblems.forEach((p) => {
+      if (scores[p.mod]) {
+        scores[p.mod].max += 2;
         const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+        if (res) {
+          scores[p.mod].earned += res.points;
+          earned += res.points;
+        }
+      }
+    });
+
+    selectedMods.forEach((m) => {
+      if (scores[m].max > 0) {
+        scores[m].pct = Math.round((scores[m].earned / scores[m].max) * 100);
+      }
     });
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
