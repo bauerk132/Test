@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ModuleId, ModuleStats, PracticeProblem, PracticeResult, GuidedProgress, GuidedExample } from '../types';
 import { MICRO_SKILLS } from '../data/microSkills';
 import { Trophy, Compass, BookOpen, RotateCcw, Eye, Flame } from 'lucide-react';
@@ -104,29 +104,40 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const avgAttempts = correctSteps > 0 ? (totalAttempts / correctSteps).toFixed(1) : '1.0';
 
   // Analysis Engine Gaps
-  const gaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
-  selectedMods.forEach((m) => {
-    const errorCountByMs: Record<string, number> = {};
-    practiceProblems
-      .filter((q) => q.mod === m)
-      .forEach((q) => {
+  const gaps = useMemo(() => {
+    // ⚡ Bolt: Wrapped gaps calculation in useMemo to prevent recalculation on every render.
+    // Refactored O(N*M) nested selectedMods.forEach -> practiceProblems.filter
+    // into a single-pass O(N) loop over practiceProblems.
+    const calculatedGaps: Array<{ mod: ModuleId; ms: string; errors: number; priority: 'high' | 'medium' }> = [];
+    const errorCountByModAndMs: Record<number, Record<string, number>> = {};
+
+    practiceProblems.forEach((q) => {
+      if (selectedMods.includes(q.mod)) {
         const res = practiceResults[q.id];
         if (res && res.points < 2) {
-          errorCountByMs[q.ms] = (errorCountByMs[q.ms] || 0) + 1;
+          if (!errorCountByModAndMs[q.mod]) {
+            errorCountByModAndMs[q.mod] = {};
+          }
+          errorCountByModAndMs[q.mod][q.ms] = (errorCountByModAndMs[q.mod][q.ms] || 0) + 1;
         }
-      });
+      }
+    });
 
-    Object.entries(errorCountByMs).forEach(([ms, count]) => {
-      gaps.push({
-        mod: m,
-        ms,
-        errors: count,
-        priority: count >= 2 ? 'high' : 'medium',
+    Object.entries(errorCountByModAndMs).forEach(([modStr, msCounts]) => {
+      const m = Number(modStr) as ModuleId;
+      Object.entries(msCounts).forEach(([ms, count]) => {
+        calculatedGaps.push({
+          mod: m,
+          ms,
+          errors: count,
+          priority: count >= 2 ? 'high' : 'medium',
+        });
       });
     });
-  });
 
-  gaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    calculatedGaps.sort((a, b) => (a.priority === 'high' ? -1 : 1));
+    return calculatedGaps;
+  }, [practiceProblems, practiceResults, selectedMods]);
 
   const handleStudyGuideTrigger = () => {
     setShowStudyGuide(true);
