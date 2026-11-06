@@ -16,6 +16,10 @@ import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 import { GuidedExample } from './types';
 
+// ⚡ Bolt: Extract inline fallback object to module level to prevent `React.memo` breakage
+// in `GuidedCard` during top-level global timer ticks.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = { currentStep: 0, stepResults: [], complete: false };
+
 // Precompute a flat map of guided examples for O(1) lookups
 const guidedExampleMap = new Map<string, GuidedExample>();
 for (const modId in GUIDED) {
@@ -410,24 +414,34 @@ export default function App() {
 
   // Results Scores
   const { earnedPts, maxPts, modScores } = useMemo(() => {
+    // ⚡ Bolt: Replaced O(N*M) nested selectedMods.forEach -> activeProblems.filter
+    // with a single-pass O(N) accumulation loop over activeProblems.
     let earned = 0;
     const max = activeProblems.length * 2;
     const scores: Record<number, ModuleStats> = {};
 
+    // Initialize scores for all selected modules
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
+      scores[m] = { earned: 0, max: 0, pct: 0 };
+    });
+
+    activeProblems.forEach((p) => {
+      if (scores[p.mod]) {
+        scores[p.mod].max += 2;
         const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+        if (res) {
+          scores[p.mod].earned += res.points;
+          earned += res.points;
+        }
+      }
+    });
+
+    // Finalize percentages
+    selectedMods.forEach((m) => {
+      const s = scores[m];
+      if (s) {
+        s.pct = s.max > 0 ? Math.round((s.earned / s.max) * 100) : 0;
+      }
     });
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
@@ -582,13 +596,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
