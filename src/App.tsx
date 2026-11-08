@@ -24,6 +24,9 @@ for (const modId in GUIDED) {
   }
 }
 
+// ⚡ Bolt: Extracted inline object to module-level constant to prevent memoization leaks on every timer tick.
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = { currentStep: 0, stepResults: [], complete: false };
+
 const omitKey = <T,>(key: string) => (prev: Record<string, T>): Record<string, T> => {
   const next = { ...prev };
   delete next[key];
@@ -414,21 +417,26 @@ export default function App() {
     const max = activeProblems.length * 2;
     const scores: Record<number, ModuleStats> = {};
 
+    // ⚡ Bolt: Single-pass accumulation to avoid O(N*M) filter inside forEach.
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
-        const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+      scores[m] = { earned: 0, max: 0, pct: 0 };
     });
+
+    activeProblems.forEach((p) => {
+      if (scores[p.mod]) {
+        scores[p.mod].max += 2;
+        const res = practiceResults[p.id];
+        if (res) {
+          scores[p.mod].earned += res.points;
+          earned += res.points;
+        }
+      }
+    });
+
+    for (const m in scores) {
+      const s = scores[m];
+      s.pct = s.max > 0 ? Math.round((s.earned / s.max) * 100) : 0;
+    }
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
   }, [activeProblems, selectedMods, practiceResults]);
@@ -440,6 +448,11 @@ export default function App() {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  // ⚡ Bolt: Memoized close handlers to prevent modal re-renders
+  const closeSandbox = useCallback(() => setIsSandboxOpen(false), []);
+  const closeGithub = useCallback(() => setIsGithubOpen(false), []);
+  const closeFormula = useCallback(() => setIsFormulaOpen(false), []);
 
   return (
     <div className="min-h-screen bg-[#090b10] text-[#e2e8f0] flex flex-col font-sans">
@@ -583,11 +596,7 @@ export default function App() {
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
                             progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
+                              guidedState[g.id] || DEFAULT_GUIDED_PROGRESS
                             }
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
@@ -700,19 +709,19 @@ export default function App() {
       {/* Interactive Graphing Sandbox Modal */}
       <InteractiveSandboxModal
         isOpen={isSandboxOpen}
-        onClose={() => setIsSandboxOpen(false)}
+        onClose={closeSandbox}
       />
 
       {/* GitHub Export Modal */}
       <GitHubExportModal
         isOpen={isGithubOpen}
-        onClose={() => setIsGithubOpen(false)}
+        onClose={closeGithub}
       />
 
       {/* Formula Sheet Modal */}
       <FormulaModal
         isOpen={isFormulaOpen}
-        onClose={() => setIsFormulaOpen(false)}
+        onClose={closeFormula}
       />
     </div>
   );

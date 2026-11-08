@@ -18,3 +18,11 @@
 ## 2024-10-25 - [Optimize Component Memory and Re-renders]
 **Learning:** Found several performance bottlenecks where `MathKeypad` recreated large configuration arrays (`keyGroups`, `quickKeys`) on every render, and `PracticeCard` passed unstable callbacks causing `MathKeypad` to re-render. Additionally, `FunctionVisualizer` was recalculating heavy coordinate paths on each render.
 **Action:** Extract large static configuration arrays (`keyGroups`, `quickKeys`) and coordinate variables out of functional components. Wrap child components like `MathKeypad` and `FunctionVisualizer` in `React.memo`, wrap their callbacks in `useCallback` from the parent (`PracticeCard`), and use `useMemo` for heavy string/math path generation. Always add code comments to document optimizations (`// ⚡ Bolt: ...`).
+
+## 2024-10-26 - [Prevent Memoization Leaks with Inline Objects]
+**Learning:** Passing inline objects as fallback props (e.g., `progress={guidedState[g.id] || { currentStep: 0, stepResults: [], complete: false }}`) creates a new object reference on every render, defeating the purpose of `React.memo` on the child component.
+**Action:** Extract inline fallback objects to module-level constants to preserve referential equality and ensure `React.memo` works as intended.
+
+## 2024-10-26 - [Optimize Nested Iterations]
+**Learning:** Found an O(N*M) calculation where `activeProblems.filter` was called inside `selectedMods.forEach` to calculate scores.
+**Action:** Replace nested iterations with a single-pass O(N) accumulation loop (e.g., using a pre-initialized lookup map) to avoid expensive array re-traversals during render loops.
