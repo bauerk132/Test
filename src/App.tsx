@@ -358,7 +358,7 @@ export default function App() {
     } catch (e) {}
   };
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setUserAnswers({});
     setUserWork({});
     setPracticeResults({});
@@ -367,7 +367,11 @@ export default function App() {
     setIsTimerRunning(false);
     setView('select');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
+
+  const handleOpenGithub = useCallback(() => {
+    setIsGithubOpen(true);
+  }, []);
 
   // Progress Calculations
   const {
@@ -692,7 +696,7 @@ export default function App() {
             guidedData={GUIDED}
             guidedState={guidedState}
             onReset={handleReset}
-            onOpenGithub={() => setIsGithubOpen(true)}
+            onOpenGithub={handleOpenGithub}
           />
         )}
       </main>
