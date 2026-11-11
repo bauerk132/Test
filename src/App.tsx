@@ -16,6 +16,13 @@ import confetti from 'canvas-confetti';
 import { generateProblemVariant } from './utils/variantGenerator';
 import { GuidedExample } from './types';
 
+// ⚡ Bolt: Extracting inline object fallback to a stable module-level constant to prevent memoization leaks on `GuidedCard` renders
+const DEFAULT_GUIDED_PROGRESS: GuidedProgress = {
+  currentStep: 0,
+  stepResults: [],
+  complete: false,
+};
+
 // Precompute a flat map of guided examples for O(1) lookups
 const guidedExampleMap = new Map<string, GuidedExample>();
 for (const modId in GUIDED) {
@@ -95,6 +102,13 @@ export default function App() {
 
   // Active module anchor tab in learning view
   const [activeTab, setActiveTab] = useState<ModuleId>(5);
+
+  // ⚡ Bolt: Stabilized Header callbacks to prevent breaking Header's React.memo memoization on every App re-render
+  const handleToggleTimer = useCallback(() => setIsTimerRunning(prev => !prev), []);
+  const handleOpenSandbox = useCallback(() => setIsSandboxOpen(true), []);
+  const handleOpenGithub = useCallback(() => setIsGithubOpen(true), []);
+  const handleOpenFormulas = useCallback(() => setIsFormulaOpen(true), []);
+  const handleNavigateHome = useCallback(() => setView('select'), []);
 
   // Timer Effect
   useEffect(() => {
@@ -414,20 +428,26 @@ export default function App() {
     const max = activeProblems.length * 2;
     const scores: Record<number, ModuleStats> = {};
 
+    // ⚡ Bolt: Refactored O(N*M) nested `.filter` and `.forEach` into a single-pass O(N) accumulation over activeProblems
     selectedMods.forEach((m) => {
-      const modProbs = activeProblems.filter((p) => p.mod === m);
-      let modEarned = 0;
-      modProbs.forEach((p) => {
+      scores[m] = { earned: 0, max: 0, pct: 0 };
+    });
+
+    activeProblems.forEach((p) => {
+      const m = p.mod;
+      if (scores[m]) {
         const res = practiceResults[p.id];
-        if (res) modEarned += res.points;
-      });
-      const modMax = modProbs.length * 2;
-      scores[m] = {
-        earned: modEarned,
-        max: modMax,
-        pct: modMax > 0 ? Math.round((modEarned / modMax) * 100) : 0,
-      };
-      earned += modEarned;
+        const pPts = res ? res.points : 0;
+        scores[m].earned += pPts;
+        scores[m].max += 2;
+        earned += pPts;
+      }
+    });
+
+    selectedMods.forEach((m) => {
+      if (scores[m]) {
+        scores[m].pct = scores[m].max > 0 ? Math.round((scores[m].earned / scores[m].max) * 100) : 0;
+      }
     });
 
     return { earnedPts: earned, maxPts: max, modScores: scores };
@@ -446,11 +466,11 @@ export default function App() {
       <Header
         seconds={seconds}
         isTimerRunning={isTimerRunning}
-        onToggleTimer={() => setIsTimerRunning(!isTimerRunning)}
-        onOpenSandbox={() => setIsSandboxOpen(true)}
-        onOpenGithub={() => setIsGithubOpen(true)}
-        onOpenFormulas={() => setIsFormulaOpen(true)}
-        onNavigateHome={() => setView('select')}
+        onToggleTimer={handleToggleTimer}
+        onOpenSandbox={handleOpenSandbox}
+        onOpenGithub={handleOpenGithub}
+        onOpenFormulas={handleOpenFormulas}
+        onNavigateHome={handleNavigateHome}
       />
 
       <main className="flex-1 w-full pb-16">
@@ -582,13 +602,7 @@ export default function App() {
                             example={g}
                             index={gIdx}
                             microSkill={MICRO_SKILLS[g.ms]}
-                            progress={
-                              guidedState[g.id] || {
-                                currentStep: 0,
-                                stepResults: [],
-                                complete: false,
-                              }
-                            }
+                            progress={guidedState[g.id] || DEFAULT_GUIDED_PROGRESS}
                             onCheckStep={handleCheckStep}
                             onNextStep={handleNextStep}
                           />
