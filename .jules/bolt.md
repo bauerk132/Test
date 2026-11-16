@@ -18,3 +18,7 @@
 ## 2024-10-25 - [Optimize Component Memory and Re-renders]
 **Learning:** Found several performance bottlenecks where `MathKeypad` recreated large configuration arrays (`keyGroups`, `quickKeys`) on every render, and `PracticeCard` passed unstable callbacks causing `MathKeypad` to re-render. Additionally, `FunctionVisualizer` was recalculating heavy coordinate paths on each render.
 **Action:** Extract large static configuration arrays (`keyGroups`, `quickKeys`) and coordinate variables out of functional components. Wrap child components like `MathKeypad` and `FunctionVisualizer` in `React.memo`, wrap their callbacks in `useCallback` from the parent (`PracticeCard`), and use `useMemo` for heavy string/math path generation. Always add code comments to document optimizations (`// ⚡ Bolt: ...`).
+
+## 2024-05-18 - Nested Iteration Refactoring and Memoization Fixes
+**Learning:** O(N*M) nested array iterations (`.filter()` inside `.forEach()`) in large components like `App.tsx` can cause significant performance degradation, particularly during complex state transitions. Also, inline object fallbacks break `React.memo` for child components by passing new object references on every parent render.
+**Action:** Always extract invariant object fallbacks into module-level constants to preserve memoization. For array processing, refactor nested iterations into single-pass accumulations.
